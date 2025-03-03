@@ -1,0 +1,77 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Exécute le workflow lorsqu'un tag de version est poussé
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up environment
+        run: sudo apt-get update && sudo apt-get install -y dpkg rpm appimagetool
+
+      - name: Build DEB package
+        run: |
+          mkdir -p myapp/DEBIAN
+          cp control myapp/DEBIAN/
+          cp myapp-binary myapp/
+          dpkg-deb --build myapp
+
+      - name: Build RPM package
+        run: |
+          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          cp myapp.spec ~/rpmbuild/SPECS/
+          cp myapp-binary ~/rpmbuild/SOURCES/
+          rpmbuild -ba ~/rpmbuild/SPECS/myapp.spec
+
+      - name: Build AppImage
+        run: |
+          cp -r AppDir .
+          appimagetool AppDir
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload DEB package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./myapp.deb
+          asset_name: myapp.deb
+          asset_content_type: application/vnd.debian.binary-package
+
+      - name: Upload RPM package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ~/rpmbuild/RPMS/x86_64/myapp.rpm
+          asset_name: myapp.rpm
+          asset_content_type: application/x-rpm
+
+      - name: Upload AppImage
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./myapp.AppImage
+          asset_name: myapp.AppImage
+          asset_content_type: application/vnd.appimage
