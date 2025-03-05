@@ -49,48 +49,48 @@ jobs:
           cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
       
-          - name: Vérifier le contenu des répertoires
-            run: |
-              echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
-              mkdir -p /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject  # Création du dossier ici !
-              ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
-          
-              echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
-              ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
-          
-          - name: Générer le fichier spec et construire le RPM
-            run: |
-              cat <<EOF > orbproject.spec
-              Name: orbproject
-              Version: $VERSION
-              Release: 1
-              Summary: Un jeu fait avec Unity
-              License: Proprietary
-              Group: Games
-              BuildArch: x86_64
-              Requires: libc.so.6
-          
-              %description
-              Un jeu Unity packagé pour Fedora.
-          
-              %install
-              mkdir -p %{buildroot}/usr/lib/orbproject
-              mkdir -p %{buildroot}/usr/bin
-              cp -r %{_builddir}/rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
-              ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
-          
-              %files
-              /usr/lib/orbproject
-              /usr/bin/orbproject
-          
-              %post
-              echo 'Installation terminée!'
-              EOF
-          
-              rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-            shell: /usr/bin/bash -e {0}
-            env:
-              VERSION: $VERSION
+      - name: Vérifier le contenu des répertoires
+        run: |
+          echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
+          mkdir -p /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject  # Création du dossier ici !
+          ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
+      
+          echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
+          ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
+      
+      - name: Générer le fichier spec et construire le RPM
+        run: |
+          cat <<EOF > orbproject.spec
+          Name: orbproject
+          Version: $VERSION
+          Release: 1
+          Summary: Un jeu fait avec Unity
+          License: Proprietary
+          Group: Games
+          BuildArch: x86_64
+          Requires: libc.so.6
+      
+          %description
+          Un jeu Unity packagé pour Fedora.
+      
+          %install
+          mkdir -p %{buildroot}/usr/lib/orbproject
+          mkdir -p %{buildroot}/usr/bin
+          cp -r %{_builddir}/rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
+      
+          %files
+          /usr/lib/orbproject
+          /usr/bin/orbproject
+      
+          %post
+          echo 'Installation terminée!'
+          EOF
+      
+          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+          shell: /usr/bin/bash -e {0}
+          env:
+            VERSION: $VERSION
 
 
       - name: Préparer Flatpak
