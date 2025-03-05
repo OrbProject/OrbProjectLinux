@@ -98,10 +98,12 @@ jobs:
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install -y flathub org.freedesktop.Platform//22.08
           sudo flatpak install -y flathub org.freedesktop.Sdk//22.08
-
-      - name: Vérifier l'installation de Flatpak
-        run: flatpak --version
-
+      
+      - name: Vérifier l'installation de Flatpak et des SDK
+        run: |
+          flatpak --version
+          flatpak list
+      
       - name: Générer le fichier de configuration Flatpak
         run: |
           cat <<EOF > orbproject.flatpak.json
@@ -129,14 +131,31 @@ jobs:
             ]
           }
           EOF
-
-
-      - name: Préparer Flatpak
+      
+      - name: Préparer les fichiers pour Flatpak
         run: |
           mkdir -p flatpak/app/bin
           mkdir -p flatpak/app/lib/orbproject
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
-          ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
+      
+          echo "📁 Avant la copie, voici le contenu du répertoire source :"
+          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
+      
+          cp -v OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
+      
+          if [ -f flatpak/app/lib/orbproject/OrbProject.x86_64 ]; then
+            ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
+          else
+            echo "❌ Erreur : OrbProject.x86_64 n'existe pas dans flatpak/app/lib/orbproject/"
+            exit 1
+          fi
+      
+      - name: Vérifier les fichiers Flatpak avant build
+        run: |
+          echo "📁 Contenu du dossier Flatpak après copie :"
+          ls -R flatpak || echo "❌ Le dossier Flatpak est vide ou inexistant"
+      
+      - name: Construire et empaqueter Flatpak
+        run: |
           flatpak-builder --repo=repo build-dir orbproject.flatpak.json
           flatpak build-bundle repo OrbProject_${VERSION}.flatpak com.orbproject.OrbProject
 
