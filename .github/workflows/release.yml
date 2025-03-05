@@ -62,7 +62,7 @@ jobs:
         run: |
           cat <<EOF > orbproject.spec
           Name: orbproject
-          Version: $VERSION
+          Version: ${VERSION}
           Release: 1
           Summary: Un jeu fait avec Unity
           License: Proprietary
@@ -90,7 +90,7 @@ jobs:
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
         shell: bash
         env:
-          VERSION: $VERSION
+          VERSION: ${VERSION}
 
       - name: Préparer Flatpak
         run: |
