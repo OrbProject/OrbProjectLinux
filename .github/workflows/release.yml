@@ -90,7 +90,7 @@ jobs:
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
         shell: bash
         env:
-          VERSION: ${VERSION}
+          VERSION: ${{ env.VERSION }}
 
       - name: Préparer Flatpak
         run: |
