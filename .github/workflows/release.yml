@@ -45,6 +45,15 @@ jobs:
       
           # Vérifie que les fichiers existent avant de les copier
           ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
+
+          - name: Vérifier le contenu du répertoire avant copie
+            run: |
+              echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
+              ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
+          
+              echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
+              ls -l /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
+
       
           cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
