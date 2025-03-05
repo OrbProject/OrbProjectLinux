@@ -38,9 +38,6 @@ jobs:
 
           dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb
 
-      - name: Vérifier le contenu de rpm/
-        run: ls -R rpm/
-
       - name: Préparer .rpm (Fedora)
         run: |
           mkdir -p rpm/usr/lib/orbproject
