@@ -100,6 +100,35 @@ jobs:
       - name: Vérifier l'installation de Flatpak
         run: flatpak --version
 
+      - name: Générer le fichier de configuration Flatpak
+        run: |
+          cat <<EOF > orbproject.flatpak.json
+          {
+            "app-id": "com.orbproject.OrbProject",
+            "runtime": "org.freedesktop.Platform",
+            "runtime-version": "22.08",
+            "sdk": "org.freedesktop.Sdk",
+            "command": "orbproject",
+            "modules": [
+              {
+                "name": "orbproject",
+                "buildsystem": "simple",
+                "build-commands": [
+                  "install -D -m 755 flatpak/app/bin/orbproject /app/bin/orbproject",
+                  "cp -r flatpak/app/lib/orbproject /app/lib/"
+                ],
+                "sources": [
+                  {
+                    "type": "dir",
+                    "path": "flatpak/app"
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+
       - name: Préparer Flatpak
         run: |
           mkdir -p flatpak/app/bin
