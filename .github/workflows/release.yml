@@ -38,13 +38,17 @@ jobs:
 
           dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb
 
+      - name: Vérifier le contenu de rpm/
+        run: ls -R rpm/
+
       - name: Préparer .rpm (Fedora)
         run: |
           mkdir -p rpm/usr/lib/orbproject
           mkdir -p rpm/usr/bin
+        
           cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
-
+        
           echo "Name: orbproject
           Version: $VERSION
           Release: 1
@@ -53,24 +57,25 @@ jobs:
           Group: Games
           BuildArch: x86_64
           Requires: libc.so.6
-
+        
           %description
           Un jeu Unity packagé pour Fedora.
-
+        
           %install
           mkdir -p %{buildroot}/usr/lib/orbproject
           mkdir -p %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          cp -r %{_builddir}/rpm/usr/lib/orbproject %{buildroot}/usr/lib/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
-
+        
           %files
           /usr/lib/orbproject
           /usr/bin/orbproject
-
+        
           %post
           echo 'Installation terminée!'" > orbproject.spec
-
+        
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+
 
       - name: Préparer Flatpak
         run: |
