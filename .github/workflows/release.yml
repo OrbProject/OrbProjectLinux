@@ -140,7 +140,7 @@ jobs:
           echo "📁 Avant la copie, voici le contenu du répertoire source :"
           ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
       
-          cp -v OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
+          cp -vr OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
       
           if [ -f flatpak/app/lib/orbproject/OrbProject.x86_64 ]; then
             ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
