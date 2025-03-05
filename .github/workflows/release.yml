@@ -1,0 +1,90 @@
+name: Package and Release Linux Builds
+
+on:
+  release:
+    types: [created]  # Déclenche l'action uniquement lors de la création d'une release
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Récupérer le numéro de version depuis la release
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Afficher la structure des fichiers
+        run: ls -R
+
+      - name: Préparer .deb (Debian/Ubuntu)
+        run: |
+          mkdir -p debian/DEBIAN
+          mkdir -p debian/usr/lib/orbproject
+          mkdir -p debian/usr/bin
+
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* debian/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 debian/usr/bin/orbproject
+
+          echo "Package: orbproject
+          Version: $VERSION
+          Section: games
+          Priority: optional
+          Architecture: amd64
+          Depends: libc6
+          Maintainer: TonNom <ton.email@example.com>
+          Description: Un jeu fait avec Unity" > debian/DEBIAN/control
+
+          dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb
+
+      - name: Préparer .rpm (Fedora)
+        run: |
+          mkdir -p rpm/usr/lib/orbproject
+          mkdir -p rpm/usr/bin
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
+
+          echo "Name: orbproject
+          Version: $VERSION
+          Release: 1
+          Summary: Un jeu fait avec Unity
+          License: Proprietary
+          Group: Games
+          BuildArch: x86_64
+          Requires: libc.so.6
+
+          %description
+          Un jeu Unity packagé pour Fedora.
+
+          %install
+          mkdir -p %{buildroot}/usr/lib/orbproject
+          mkdir -p %{buildroot}/usr/bin
+          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
+
+          %files
+          /usr/lib/orbproject
+          /usr/bin/orbproject
+
+          %post
+          echo 'Installation terminée!'" > orbproject.spec
+
+          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+
+      - name: Préparer Flatpak
+        run: |
+          mkdir -p flatpak/app/bin
+          mkdir -p flatpak/app/lib/orbproject
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
+          ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
+          flatpak-builder --repo=repo build-dir orbproject.flatpak.json
+          flatpak build-bundle repo OrbProject_${VERSION}.flatpak com.orbproject.OrbProject
+
+      - name: Upload Artifacts to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            OrbProject_${VERSION}_amd64.deb
+            OrbProject_${VERSION}_x86_64.rpm
+            OrbProject_${VERSION}.flatpak
