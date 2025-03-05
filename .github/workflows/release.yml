@@ -40,11 +40,15 @@ jobs:
 
       - name: Préparer .rpm (Fedora)
         run: |
-          mkdir -p rpm/usr/lib/orbproject
-          mkdir -p rpm/usr/bin
-        
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
+          mkdir -p $PWD/rpm/usr/lib/orbproject
+          mkdir -p $PWD/rpm/usr/bin
+      
+          # Vérifie que les fichiers existent avant de les copier
+          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
+      
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
+
         
           echo "Name: orbproject
           Version: $VERSION
