@@ -88,9 +88,9 @@ jobs:
           EOF
       
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-          shell: /usr/bin/bash -e {0}
-          env:
-            VERSION: $VERSION
+            shell: /usr/bin/bash -e {0}
+            env:
+              VERSION: $VERSION
 
 
       - name: Préparer Flatpak
