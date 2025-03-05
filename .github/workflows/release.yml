@@ -58,40 +58,39 @@ jobs:
           echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
           ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
       
-      - name: Générer le fichier spec et construire le RPM
-        run: |
-          cat <<EOF > orbproject.spec
-          Name: orbproject
-          Version: $VERSION
-          Release: 1
-          Summary: Un jeu fait avec Unity
-          License: Proprietary
-          Group: Games
-          BuildArch: x86_64
-          Requires: libc.so.6
+            - name: Générer le fichier spec et construire le RPM
+              run: |
+                cat <<EOF > orbproject.spec
+                Name: orbproject
+                Version: $VERSION
+                Release: 1
+                Summary: Un jeu fait avec Unity
+                License: Proprietary
+                Group: Games
+                BuildArch: x86_64
+                Requires: libc.so.6
       
-          %description
-          Un jeu Unity packagé pour Fedora.
+                %description
+                Un jeu Unity packagé pour Fedora.
       
-          %install
-          mkdir -p %{buildroot}/usr/lib/orbproject
-          mkdir -p %{buildroot}/usr/bin
-          cp -r %{_builddir}/rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
+                %install
+                mkdir -p %{buildroot}/usr/lib/orbproject
+                mkdir -p %{buildroot}/usr/bin
+                cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
+                ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
       
-          %files
-          /usr/lib/orbproject
-          /usr/bin/orbproject
+                %files
+                /usr/lib/orbproject
+                /usr/bin/orbproject
       
-          %post
-          echo 'Installation terminée!'
-          EOF
+                %post
+                echo 'Installation terminée!'
+                EOF
       
-          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-            shell: /usr/bin/bash -e {0}
-            env:
-              VERSION: $VERSION
-
+                rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+              shell: bash
+              env:
+                VERSION: $VERSION
 
       - name: Préparer Flatpak
         run: |
