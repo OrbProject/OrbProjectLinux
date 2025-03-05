@@ -92,6 +92,14 @@ jobs:
         env:
           VERSION: ${{ env.VERSION }}
 
+      - name: Installer Flatpak et Flatpak-Builder
+        run: |
+          sudo apt update
+          sudo apt install -y flatpak flatpak-builder
+          
+      - name: Vérifier l'installation de Flatpak
+        run: flatpak --version
+
       - name: Préparer Flatpak
         run: |
           mkdir -p flatpak/app/bin
