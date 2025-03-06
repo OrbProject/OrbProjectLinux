@@ -135,11 +135,6 @@ jobs:
       - name: Préparer les fichiers pour Flatpak
         run: |
           mkdir -p flatpak/app/lib/orbproject
-      
-          echo "📁 Vérification du répertoire source :"
-          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
-      
-          # Copier les fichiers, y compris le dossier OrbProject_Data
           cp -vr OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
       
           # Vérifier si OrbProject.x86_64 a bien été copié
@@ -149,11 +144,6 @@ jobs:
             echo "❌ Erreur : OrbProject.x86_64 n'a pas été copié correctement."
             exit 1
           fi
-
-      - name: Vérifier les fichiers Flatpak avant build
-        run: |
-          echo "📁 Contenu du dossier Flatpak après copie :"
-          ls -R flatpak || echo "❌ Le dossier Flatpak est vide ou inexistant"
       
       - name: Construire le Flatpak
         run: |
