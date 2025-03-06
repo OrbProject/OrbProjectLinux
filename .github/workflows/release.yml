@@ -118,7 +118,7 @@ jobs:
                 "name": "orbproject",
                 "buildsystem": "simple",
                 "build-commands": [
-                  "install -D -m 755 flatpak/app/bin/orbproject /app/bin/orbproject",
+                  "install -D -m 755 flatpak/app/lib/orbproject/OrbProject.x86_64 /app/bin/orbproject",
                   "cp -r flatpak/app/lib/orbproject /app/lib/"
                 ],
                 "sources": [
@@ -134,7 +134,6 @@ jobs:
       
       - name: Préparer les fichiers pour Flatpak
         run: |
-          mkdir -p flatpak/app/bin
           mkdir -p flatpak/app/lib/orbproject
       
           echo "📁 Vérification du répertoire source :"
@@ -147,17 +146,7 @@ jobs:
           if [ -f flatpak/app/lib/orbproject/OrbProject.x86_64 ]; then
             echo "✅ OrbProject.x86_64 copié avec succès."
           else
-            echo "❌ Erreur : OrbProject.x86_64 n a pas été copié correctement."
-            exit 1
-          fi
-      
-          # Créer le lien symbolique et vérifier qu'il a bien été créé
-          ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
-      
-          if [ -L flatpak/app/bin/orbproject ]; then
-            echo "✅ Lien symbolique créé avec succès."
-          else
-            echo "❌ Erreur : le lien symbolique n a pas été créé."
+            echo "❌ Erreur : OrbProject.x86_64 n'a pas été copié correctement."
             exit 1
           fi
 
