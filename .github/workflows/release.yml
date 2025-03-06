@@ -96,8 +96,8 @@ jobs:
         run: |
           sudo apt update && sudo apt install -y flatpak flatpak-builder
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub org.freedesktop.Platform//22.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk//22.08
+          sudo flatpak install -y flathub org.freedesktop.Platform//21.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//21.08
       
       - name: Vérifier installation de Flatpak et des SDK
         run: |
