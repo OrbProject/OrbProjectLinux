@@ -137,18 +137,30 @@ jobs:
           mkdir -p flatpak/app/bin
           mkdir -p flatpak/app/lib/orbproject
       
-          echo "📁 Avant la copie, voici le contenu du répertoire source :"
+          echo "📁 Vérification du répertoire source :"
           ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
       
+          # Copier les fichiers, y compris le dossier OrbProject_Data
           cp -vr OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
       
+          # Vérifier si OrbProject.x86_64 a bien été copié
           if [ -f flatpak/app/lib/orbproject/OrbProject.x86_64 ]; then
-            ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
+            echo "✅ OrbProject.x86_64 copié avec succès."
           else
-            echo "❌ Erreur : OrbProject.x86_64 n'existe pas dans flatpak/app/lib/orbproject/"
+            echo "❌ Erreur : OrbProject.x86_64 n'a pas été copié correctement."
             exit 1
           fi
       
+          # Créer le lien symbolique et vérifier qu'il a bien été créé
+          ln -s /app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
+      
+          if [ -L flatpak/app/bin/orbproject ]; then
+            echo "✅ Lien symbolique créé avec succès."
+          else
+            echo "❌ Erreur : le lien symbolique n'a pas été créé."
+            exit 1
+          fi
+
       - name: Vérifier les fichiers Flatpak avant build
         run: |
           echo "📁 Contenu du dossier Flatpak après copie :"
