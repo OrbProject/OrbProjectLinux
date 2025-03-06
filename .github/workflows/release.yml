@@ -99,7 +99,7 @@ jobs:
           sudo flatpak install -y flathub org.freedesktop.Platform//22.08
           sudo flatpak install -y flathub org.freedesktop.Sdk//22.08
       
-      - name: Vérifier l'installation de Flatpak et des SDK
+      - name: Vérifier installation de Flatpak et des SDK
         run: |
           flatpak --version
           flatpak list
@@ -147,7 +147,7 @@ jobs:
           if [ -f flatpak/app/lib/orbproject/OrbProject.x86_64 ]; then
             echo "✅ OrbProject.x86_64 copié avec succès."
           else
-            echo "❌ Erreur : OrbProject.x86_64 n'a pas été copié correctement."
+            echo "❌ Erreur : OrbProject.x86_64 n a pas été copié correctement."
             exit 1
           fi
       
@@ -157,7 +157,7 @@ jobs:
           if [ -L flatpak/app/bin/orbproject ]; then
             echo "✅ Lien symbolique créé avec succès."
           else
-            echo "❌ Erreur : le lien symbolique n'a pas été créé."
+            echo "❌ Erreur : le lien symbolique n a pas été créé."
             exit 1
           fi
 
@@ -166,8 +166,11 @@ jobs:
           echo "📁 Contenu du dossier Flatpak après copie :"
           ls -R flatpak || echo "❌ Le dossier Flatpak est vide ou inexistant"
       
-      - name: Construire et empaqueter Flatpak
+      - name: Construire le Flatpak
         run: |
+          echo "📁 Contenu du dossier Flatpak avant la construction :"
+          ls -lR flatpak/app/ || exit 1  # Vérifier la structure complète
+      
           flatpak-builder --repo=repo build-dir orbproject.flatpak.json
           flatpak build-bundle repo OrbProject_${VERSION}.flatpak com.orbproject.OrbProject
 
