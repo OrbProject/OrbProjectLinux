@@ -97,6 +97,12 @@ jobs:
           echo "📁 Liste des fichiers RPM générés :"
           find ~/rpmbuild/RPMS/ -name "*.rpm" || echo "❌ AUCUN fichier RPM trouvé !"
 
+      - name: Copier le RPM dans le dossier de build
+        run: |
+          mkdir -p artifacts
+          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
+
+
         shell: bash
         env:
           VERSION: ${{ env.VERSION }}
@@ -171,7 +177,8 @@ jobs:
         with:
           files: |
             OrbProject_${{ env.VERSION }}_amd64.deb
-            ~/rpmbuild/RPMS/x86_64/OrbProject-${{ env.VERSION }}-1.x86_64.rpm
+            artifacts/*.rpm
             OrbProject_${{ env.VERSION }}.flatpak
+
 
 
