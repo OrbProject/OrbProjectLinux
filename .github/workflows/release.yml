@@ -4,6 +4,10 @@ on:
   release:
     types: [created]  # Déclenche l'action uniquement lors de la création d'une release
 
+permissions:
+  contents: write
+
+
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -161,6 +165,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            OrbProject_${VERSION}_amd64.deb
-            OrbProject_${VERSION}_x86_64.rpm
-            OrbProject_${VERSION}.flatpak
+            OrbProject_${{ env.VERSION }}_amd64.deb
+            OrbProject_${{ env.VERSION }}_x86_64.rpm
+            OrbProject_${{ env.VERSION }}.flatpak
+
