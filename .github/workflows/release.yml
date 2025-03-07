@@ -20,13 +20,11 @@ jobs:
 
       - name: Préparer .deb (Debian/Ubuntu)
         run: |
-          mkdir -p debian/DEBIAN debian/usr/lib/orbproject debian/usr/bin
-          
-          # Vérifier l'existence des fichiers avant copie
-          ls OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
-          
+          mkdir -p debian/DEBIAN
+          mkdir -p debian/usr/lib/orbproject
+          mkdir -p debian/usr/bin
+
           cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* debian/usr/lib/orbproject/
-          chmod +x debian/usr/lib/orbproject/OrbProject.x86_64
           ln -s /usr/lib/orbproject/OrbProject.x86_64 debian/usr/bin/orbproject
 
           echo "Package: orbproject
@@ -38,18 +36,30 @@ jobs:
           Maintainer: TonNom <ton.email@example.com>
           Description: Un jeu fait avec Unity" > debian/DEBIAN/control
 
-          dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb &> build_deb.log
+          dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb
 
-      - name: Préparer .rpm (Fedora/RedHat)
+      - name: Créer les dossiers et copier les fichiers
         run: |
-          mkdir -p rpm/usr/lib/orbproject rpm/usr/bin
-          
-          ls OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
-          
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
-          chmod +x rpm/usr/lib/orbproject/OrbProject.x86_64
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
-
+          mkdir -p $PWD/rpm/usr/lib/orbproject
+          mkdir -p $PWD/rpm/usr/bin
+      
+          # Vérifie que les fichiers existent avant de les copier
+          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
+      
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
+      
+      - name: Vérifier le contenu des répertoires
+        run: |
+          echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
+          mkdir -p /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject  # Création du dossier ici !
+          ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
+      
+          echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
+          ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
+      
+      - name: Générer le fichier spec et construire le RPM
+        run: |
           cat <<EOF > orbproject.spec
           Name: orbproject
           Version: ${VERSION}
@@ -64,8 +74,9 @@ jobs:
           Un jeu Unity packagé pour Fedora.
 
           %install
-          mkdir -p %{buildroot}/usr/lib/orbproject %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          mkdir -p %{buildroot}/usr/lib/orbproject
+          mkdir -p %{buildroot}/usr/bin
+          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
 
           %files
@@ -76,42 +87,38 @@ jobs:
           echo 'Installation terminée!'
           EOF
 
-          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm &> build_rpm.log
+          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
         shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}
 
-      - name: Installer et vérifier Flatpak
+      - name: Installer les dépendances Flatpak
         run: |
           sudo apt update && sudo apt install -y flatpak flatpak-builder
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install -y flathub org.freedesktop.Platform//21.08
           sudo flatpak install -y flathub org.freedesktop.Sdk//21.08
+
+      - name: Vérifier installation de Flatpak et des SDK
+        run: |
           flatpak --version
           flatpak list
 
-      - name: Générer Flatpak
+      - name: Générer le fichier de configuration Flatpak
         run: |
-          mkdir -p flatpak/app/lib/orbproject
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
-          chmod +x flatpak/app/lib/orbproject/OrbProject.x86_64
-          
-          if [ ! -f flatpak/app/lib/orbproject/OrbProject.x86_64 ]; then
-            echo "❌ Erreur : OrbProject.x86_64 n'a pas été copié correctement."
-            exit 1
-          fi
-          
           cat <<EOF > orbproject.flatpak.json
           {
             "app-id": "com.orbproject.OrbProject",
             "runtime": "org.freedesktop.Platform",
             "runtime-version": "21.08",
             "sdk": "org.freedesktop.Sdk",
-            "command": "/app/lib/orbproject/OrbProject.x86_64",
+            "command": "/app/bin/orbproject",
             "modules": [
               {
                 "name": "orbproject",
                 "buildsystem": "simple",
                 "build-commands": [
-                  [ "install", "-D", "-m", "755", "flatpak/app/lib/orbproject/OrbProject.x86_64", "/app/lib/orbproject/OrbProject.x86_64" ]
+                  "install -D -m 755 bin/orbproject /app/bin/orbproject"
                 ],
                 "sources": [
                   {
@@ -124,6 +131,29 @@ jobs:
           }
           EOF
 
+      - name: Préparer les fichiers pour Flatpak
+        run: |
+          mkdir -p flatpak/app/lib/orbproject
+          mkdir -p flatpak/app/bin
+          
+          cp -vr OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
+          cp flatpak/app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
+
+          chmod +x flatpak/app/bin/orbproject
+
+          # Vérifier si l'exécutable est bien copié
+          echo "📁 Vérification des fichiers après copie :"
+          ls -l flatpak/app/bin/orbproject || exit 1
+
+      - name: Construire le Flatpak
+        run: |
+          echo "📁 Contenu du dossier Flatpak avant la construction :"
+          ls -lR flatpak/app/ || exit 1  # Vérifier la structure complète
+
+          echo "📁 Chemin actuel :"
+          pwd
+
+          # Utiliser un chemin absolu pour éviter des problèmes de chemin relatif
           flatpak-builder --repo=repo build-dir orbproject.flatpak.json --force-clean
           flatpak build-bundle repo OrbProject_${VERSION}.flatpak com.orbproject.OrbProject
 
