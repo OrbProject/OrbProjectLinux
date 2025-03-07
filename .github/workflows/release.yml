@@ -92,6 +92,11 @@ jobs:
           EOF
 
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+      - name: Vérifier le fichier RPM généré
+        run: |
+          echo "📁 Liste des fichiers RPM générés :"
+          find ~/rpmbuild/RPMS/ -name "*.rpm" || echo "❌ AUCUN fichier RPM trouvé !"
+
         shell: bash
         env:
           VERSION: ${{ env.VERSION }}
