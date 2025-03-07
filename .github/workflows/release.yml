@@ -166,6 +166,7 @@ jobs:
         with:
           files: |
             OrbProject_${{ env.VERSION }}_amd64.deb
-            OrbProject_${{ env.VERSION }}_x86_64.rpm
+            ~/rpmbuild/RPMS/x86_64/OrbProject-${{ env.VERSION }}-1.x86_64.rpm
             OrbProject_${{ env.VERSION }}.flatpak
+
 
