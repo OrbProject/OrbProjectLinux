@@ -221,12 +221,12 @@ jobs:
           mkdir -p ~/.gnupg
           chmod 700 ~/.gnupg
           gpg --batch --gen-key <<EOF
+          %no-protection
           Key-Type: RSA
           Key-Length: 4096
           Name-Real: OrbProject
           Name-Email: orbproject@orbprojectmanagement.com
           Expire-Date: 0
-          %no-protection
           %commit
           EOF
       
@@ -235,12 +235,16 @@ jobs:
           gpg --export --armor "OrbProject" > orbproject.gpg
           gpg --export-secret-keys --armor "OrbProject" > orbproject-secret.gpg
       
-          # Configurer GPG pour aptly
+          # Configurer GPG pour aptly (FORMAT JSON VALIDE)
           mkdir -p ~/.aptly
-          echo "gpg {
-            batch: true
-            default-key: \"OrbProject\"
-          }" > ~/.aptly.conf
+          cat <<EOF > ~/.aptly.conf
+          {
+            "gpg": {
+              "batch": true,
+              "default-key": "OrbProject"
+            }
+          }
+          EOF
 
       - name: Ajouter le paquet au dépôt APT
         run: |
@@ -278,7 +282,7 @@ jobs:
         run: |
           mkdir -p yum_repo
           cp artifacts/*.rpm yum_repo/
-          createrepo yum_repo/
+          createrepo_c yum_repo/
 
       - name: Déployer le dépôt YUM (GitHub Pages)
         run: |
