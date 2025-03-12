@@ -101,11 +101,16 @@ jobs:
         run: |
           mkdir -p artifacts
           cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
-
-
+          
         shell: bash
         env:
           VERSION: ${{ env.VERSION }}
+
+      - name: Sauvegarder le fichier RPM
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpm-package
+          path: artifacts/*.rpm
 
       - name: Installer les dépendances Flatpak
         run: |
@@ -201,7 +206,7 @@ jobs:
       - name: Ajouter le paquet au dépôt APT
         run: |
           cd aptly_repo
-          aptly repo add orbproject-repo ../OrbProject_${{ env.VERSION }}_amd64.deb
+          aptly repo add orbproject-repo $GITHUB_WORKSPACE/OrbProject_${{ env.VERSION }}_amd64.deb
           aptly publish repo -batch orbproject-repo
 
       - name: Déployer le dépôt APT (GitHub Pages)
@@ -224,11 +229,17 @@ jobs:
       - name: Installer createrepo-c
         run: sudo apt update && sudo apt install -y createrepo-c
 
+      - name: Télécharger le fichier RPM
+        uses: actions/download-artifact@v3
+        with:
+          name: rpm-package
+          path: artifacts
+
       - name: Configurer le dépôt YUM
         run: |
           mkdir -p yum_repo
           cp artifacts/*.rpm yum_repo/
-          createrepo yum_repo/
+          createrepo-c yum_repo/
 
       - name: Déployer le dépôt YUM (GitHub Pages)
         run: |
