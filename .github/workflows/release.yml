@@ -179,6 +179,73 @@ jobs:
             OrbProject_${{ env.VERSION }}_amd64.deb
             artifacts/*.rpm
             OrbProject_${{ env.VERSION }}.flatpak
+            
+  publish-apt:
+    runs-on: ubuntu-latest
+    needs: package
 
+    steps:
+      - name: Installer Aptly
+        run: |
+          sudo apt update && sudo apt install -y aptly
+
+      - name: Configurer le dépôt APT
+        run: |
+          mkdir -p aptly_repo
+          cd aptly_repo
+          aptly repo create -distribution=bullseye -component=main orbproject-repo
+
+      - name: Ajouter le paquet au dépôt APT
+        run: |
+          cd aptly_repo
+          aptly repo add orbproject-repo ../OrbProject_${{ env.VERSION }}_amd64.deb
+          aptly publish repo -batch orbproject-repo
+
+      - name: Déployer le dépôt APT (GitHub Pages)
+        run: |
+          git clone --depth 1 https://github.com/OrbProject/OrbProject-apt.git aptly_repo
+          cp -r aptly_repo/public/* OrbProject-apt/
+          cd OrbProject-apt
+          git add .
+          git commit -m "Mise à jour du dépôt APT pour OrbProject v${{ env.VERSION }}"
+          git push
+
+  publish-yum:
+    runs-on: ubuntu-latest
+    needs: package
+
+    steps:
+      - name: Installer createrepo
+        run: sudo apt update && sudo apt install -y createrepo
+
+      - name: Configurer le dépôt YUM
+        run: |
+          mkdir -p yum_repo
+          cp artifacts/*.rpm yum_repo/
+          createrepo yum_repo/
+
+      - name: Déployer le dépôt YUM (GitHub Pages)
+        run: |
+          git clone --depth 1 https://github.com/OrbProject/OrbProject-yum.git yum_repo_git
+          cp -r yum_repo/* yum_repo_git/
+          cd yum_repo_git
+          git add .
+          git commit -m "Mise à jour du dépôt YUM pour OrbProject v${{ env.VERSION }}"
+          git push
+
+  #publish-flatpak:
+     #runs-on: ubuntu-latest
+    #needs: package
+
+#    steps:
+    #  - name: Installer Flatpak et configurer Flathub
+   #     run: |
+        #  sudo apt update && sudo apt install -y flatpak flatpak-builder
+       #   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+     # - name: Déployer sur Flathub
+      #  run: |
+   #       flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak com.orbproject.OrbProject
+         # flatpak build-import-bundle repo OrbProject_${{ env.VERSION }}.flatpak
 
 
