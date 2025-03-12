@@ -107,7 +107,7 @@ jobs:
           VERSION: ${{ env.VERSION }}
 
       - name: Sauvegarder le fichier RPM
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rpm-package
           path: artifacts/*.rpm
