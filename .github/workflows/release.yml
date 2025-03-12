@@ -185,6 +185,9 @@ jobs:
     needs: package
 
     steps:
+      - name: Récupérer le numéro de version depuis la release
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        
       - name: Installer Aptly
         run: |
           sudo apt update && sudo apt install -y aptly
@@ -215,8 +218,11 @@ jobs:
     needs: package
 
     steps:
-      - name: Installer createrepo
-        run: sudo apt update && sudo apt install -y createrepo
+      - name: Récupérer le numéro de version depuis la release
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        
+      - name: Installer createrepo-c
+        run: sudo apt update && sudo apt install -y createrepo-c
 
       - name: Configurer le dépôt YUM
         run: |
