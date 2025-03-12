@@ -207,58 +207,57 @@ jobs:
 
       - name: Installer Aptly
         run: |
-          sudo apt update && sudo apt install -y aptly
+          sudo apt-get update
+          sudo apt-get install -y aptly
 
-      - name: Configurer le dépôt APT
+      - name: Configurer Aptly
         run: |
-          mkdir -p aptly_repo
-          cd aptly_repo
-          aptly repo create -distribution=bullseye -component=main orbproject-repo
-
-      - name: Installer GPG et configurer la clé
-        run: |
-          sudo apt update && sudo apt install -y gpg
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
-          gpg --batch --gen-key <<EOF
-          %no-protection
-          Key-Type: RSA
-          Key-Length: 4096
-          Name-Real: OrbProject
-          Name-Email: orbproject@orbprojectmanagement.com
-          Expire-Date: 0
-          %commit
-          EOF
-      
-          # Exporter la clé pour aptly
-          gpg --list-keys
-          gpg --export --armor "OrbProject" > orbproject.gpg
-          gpg --export-secret-keys --armor "OrbProject" > orbproject-secret.gpg
-      
-          # Configurer GPG pour aptly (FORMAT JSON VALIDE)
-          mkdir -p ~/.aptly
-          cat <<EOF > ~/.aptly.conf
+          mkdir -p /home/runner/.aptly
+          cat <<EOF > /home/runner/.aptly.conf
           {
-            "gpg": {
-              "batch": true,
-              "default-key": "OrbProject"
-            }
+            "storage": {
+              "type": "local",
+              "path": "$GITHUB_WORKSPACE/aptly_repo"
+            },
+            "gpgKey": "A3F54D0B1001C0BD60D052A395E65A263E20BB8F",
+            "gpgPassphrase": "orbproject"
           }
           EOF
 
-      - name: Ajouter le paquet au dépôt APT
+      - name: Publier avec Aptly
         run: |
           cd aptly_repo
-          aptly repo add orbproject-repo $GITHUB_WORKSPACE/OrbProject_${{ env.VERSION }}_amd64.deb
+          aptly repo add orbproject-repo $GITHUB_WORKSPACE/OrbProject_${VERSION}_amd64.deb
           aptly publish repo -batch orbproject-repo
 
-      - name: Déployer le dépôt APT (GitHub Pages)
+      - name: Configurer la clé SSH pour Git
         run: |
-          git clone --depth 1 https://github.com/OrbProject/OrbProject-apt.git aptly_repo
-          cp -r aptly_repo/* OrbProject-apt/
+          mkdir -p ~/.ssh
+          echo "${{ secrets.APT_REPO_TOKEN }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Cloner le dépôt APT
+        run: git clone --depth 1 https://github.com/OrbProject/OrbProject-apt.git OrbProject-apt
+
+      - name: Configurer l'identité Git
+        run: |
+          git config --global user.email "eitelhugo10@gmail.com"
+          git config --global user.name "Eitel Hugo"
+
+      - name: Vérifier et créer le répertoire OrbProject-apt
+        run: |
+          mkdir -p OrbProject-apt
+
+      - name: Copier les fichiers dans le dépôt APT
+        run: |
+          cp -r aptly_repo/public/* OrbProject-apt/
+
+      - name: Mettre à jour le dépôt APT
+        run: |
           cd OrbProject-apt
           git add .
-          git commit -m "Mise à jour du dépôt APT pour OrbProject v${{ env.VERSION }}"
+          git commit -m "Mise à jour du dépôt APT pour OrbProject v${VERSION}"
           git push
 
   publish-yum:
@@ -280,6 +279,13 @@ jobs:
 
       - name: Cloner le dépôt YUM
         run: git clone --depth 1 https://github.com/OrbProject/OrbProject-yum.git yum_repo_git
+
+      - name: Configurer la clé SSH pour Git
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: Configurer l'identité Git pour YUM
         run: |
