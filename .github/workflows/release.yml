@@ -2,16 +2,14 @@ name: Package and Release Linux Builds
 
 on:
   release:
-    types: [created]  # Déclenche l'action uniquement lors de la création d'une release
+    types: [created]
 
 permissions:
   contents: write
 
-
 jobs:
   package:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -22,24 +20,22 @@ jobs:
       - name: Afficher la structure des fichiers
         run: ls -R
 
-      - name: Préparer .deb (Debian/Ubuntu)
+      - name: Préparer et construire le package .deb
         run: |
-          mkdir -p debian/DEBIAN
-          mkdir -p debian/usr/lib/orbproject
-          mkdir -p debian/usr/bin
-
+          set -e
+          mkdir -p debian/DEBIAN debian/usr/lib/orbproject debian/usr/bin
           cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* debian/usr/lib/orbproject/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 debian/usr/bin/orbproject
-
-          echo "Package: orbproject
+          cat <<EOF > debian/DEBIAN/control
+          Package: orbproject
           Version: $VERSION
           Section: games
           Priority: optional
           Architecture: amd64
           Depends: libc6
           Maintainer: TonNom <ton.email@example.com>
-          Description: Un jeu fait avec Unity" > debian/DEBIAN/control
-
+          Description: Un jeu fait avec Unity
+          EOF
           dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb
 
       - name: Sauvegarder le fichier .deb
@@ -48,28 +44,12 @@ jobs:
           name: deb-package
           path: OrbProject_${{ env.VERSION }}_amd64.deb
 
-      - name: Créer les dossiers et copier les fichiers
+      - name: Construire le package RPM
         run: |
-          mkdir -p $PWD/rpm/usr/lib/orbproject
-          mkdir -p $PWD/rpm/usr/bin
-      
-          # Vérifie que les fichiers existent avant de les copier
-          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
-      
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
-      
-      - name: Vérifier le contenu des répertoires
-        run: |
-          echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
-          mkdir -p /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject  # Création du dossier ici !
-          ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
-      
-          echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
-          ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
-      
-      - name: Générer le fichier spec et construire le RPM
-        run: |
+          set -e
+          mkdir -p rpm/usr/lib/orbproject rpm/usr/bin
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
           cat <<EOF > orbproject.spec
           Name: orbproject
           Version: ${VERSION}
@@ -79,126 +59,30 @@ jobs:
           Group: Games
           BuildArch: x86_64
           Requires: libc.so.6
-
           %description
           Un jeu Unity packagé pour Fedora.
-
           %install
-          mkdir -p %{buildroot}/usr/lib/orbproject
-          mkdir -p %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
+          mkdir -p %{buildroot}/usr/lib/orbproject %{buildroot}/usr/bin
+          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
-
           %files
           /usr/lib/orbproject
           /usr/bin/orbproject
-
           %post
           echo 'Installation terminée!'
           EOF
-
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-      - name: Vérifier le fichier RPM généré
-        run: |
-          echo "📁 Liste des fichiers RPM générés :"
-          find ~/rpmbuild/RPMS/ -name "*.rpm" || echo "❌ AUCUN fichier RPM trouvé !"
-
-      - name: Copier le RPM dans le dossier de build
-        run: |
-          mkdir -p artifacts
-          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
-          
-        shell: bash
-        env:
-          VERSION: ${{ env.VERSION }}
 
       - name: Sauvegarder le fichier RPM
         uses: actions/upload-artifact@v4
         with:
           name: rpm-package
-          path: artifacts/*.rpm
+          path: ~/rpmbuild/RPMS/x86_64/*.rpm
 
-      - name: Installer les dépendances Flatpak
-        run: |
-          sudo apt update && sudo apt install -y flatpak flatpak-builder
-          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y flathub org.freedesktop.Platform//21.08
-          sudo flatpak install -y flathub org.freedesktop.Sdk//21.08
-
-      - name: Vérifier installation de Flatpak et des SDK
-        run: |
-          flatpak --version
-          flatpak list
-
-      - name: Générer le fichier de configuration Flatpak
-        run: |
-          cat <<EOF > orbproject.flatpak.json
-          {
-            "app-id": "com.orbproject.OrbProject",
-            "runtime": "org.freedesktop.Platform",
-            "runtime-version": "21.08",
-            "sdk": "org.freedesktop.Sdk",
-            "command": "/app/bin/orbproject",
-            "modules": [
-              {
-                "name": "orbproject",
-                "buildsystem": "simple",
-                "build-commands": [
-                  "install -D -m 755 bin/orbproject /app/bin/orbproject"
-                ],
-                "sources": [
-                  {
-                    "type": "dir",
-                    "path": "flatpak/app"
-                  }
-                ]
-              }
-            ]
-          }
-          EOF
-
-      - name: Préparer les fichiers pour Flatpak
-        run: |
-          mkdir -p flatpak/app/lib/orbproject
-          mkdir -p flatpak/app/bin
-          
-          cp -vr OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* flatpak/app/lib/orbproject/
-          cp flatpak/app/lib/orbproject/OrbProject.x86_64 flatpak/app/bin/orbproject
-
-          chmod +x flatpak/app/bin/orbproject
-
-          # Vérifier si l'exécutable est bien copié
-          echo "📁 Vérification des fichiers après copie :"
-          ls -l flatpak/app/bin/orbproject || exit 1
-
-      - name: Construire le Flatpak
-        run: |
-          echo "📁 Contenu du dossier Flatpak avant la construction :"
-          ls -lR flatpak/app/ || exit 1  # Vérifier la structure complète
-
-          echo "📁 Chemin actuel :"
-          pwd
-
-          # Utiliser un chemin absolu pour éviter des problèmes de chemin relatif
-          flatpak-builder --repo=repo build-dir orbproject.flatpak.json --force-clean
-          flatpak build-bundle repo OrbProject_${VERSION}.flatpak com.orbproject.OrbProject
-
-      - name: Upload Artifacts to GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            OrbProject_${{ env.VERSION }}_amd64.deb
-            artifacts/*.rpm
-            OrbProject_${{ env.VERSION }}.flatpak
-            
   publish-apt:
     runs-on: ubuntu-latest
     needs: package
-
     steps:
-      - name: Récupérer le numéro de version depuis la release
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-
       - name: Télécharger le fichier .deb
         uses: actions/download-artifact@v4
         with:
@@ -206,187 +90,56 @@ jobs:
           path: .
 
       - name: Installer Aptly
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y aptly
+        run: sudo apt-get update && sudo apt-get install -y aptly
 
-      - name: Créer le répertoire Aptly
-        run: mkdir -p aptly_repo
-
-      - name: Installer et initialiser GPG
+      - name: Vérifier et publier avec Aptly
         run: |
-          sudo apt update && sudo apt install -y gpg
-          mkdir -p ~/.gnupg
-          chmod 700 ~/.gnupg
-      
-          # Générer une clé GPG si elle n'existe pas déjà
-          gpg --batch --gen-key <<EOF
-          %no-protection
-          Key-Type: RSA
-          Key-Length: 4096
-          Name-Real: OrbProject
-          Name-Email: orbproject@example.com
-          Expire-Date: 0
-          %commit
-          EOF
-      
-          # Vérifier que la clé a bien été créée
-          gpg --list-keys
-
-      - name: Configurer Aptly avec GPG
-        run: |
-          mkdir -p ~/.aptly
-          cat <<EOF > ~/.aptly.conf
-          {
-            "gpg": {
-              "batch": true,
-              "default-key": "OrbProject"
-            }
-          }
-          EOF
-
-          # Vérifier si le fichier est bien valide
-          cat /home/runner/.aptly.conf
-          
-      - name: Publier avec Aptly
-        run: |
-          cd aptly_repo
-          aptly publish repo -batch -distribution=bullseye -component=main orbproject-repo public || echo "❌ Échec de la publication !"
-      
-      - name: Vérifier les fichiers générés par Aptly
-        run: |
-          ls -R aptly_repo || echo "❌ Le dossier aptly_repo est vide !"
-
-      - name: Configurer la clé SSH pour Git
-        run: |
-          mkdir -p ~/.ssh
-          printf "%s\n" "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa </dev/null
-
-      - name: Cloner le dépôt APT
-        run: git clone --depth 1 https://github.com/OrbProject/OrbProject-apt.git OrbProject-apt
-
-      - name: Configurer l'identité Git
-        run: |
-          git config --global user.email "eitelhugo10@gmail.com"
-          git config --global user.name "Eitel Hugo"
-
-      - name: Vérifier et créer le répertoire OrbProject-apt
-        run: |
-          mkdir -p OrbProject-apt
-
-      - name: Vérifier si `aptly_repo/public/` existe
-        run: |
-          if [ -d "aptly_repo/public" ]; then
-            echo "📂 Le dossier aptly_repo/public/ existe."
-            ls -la aptly_repo/public/
-          else
-            echo "❌ Le dossier aptly_repo/public/ est introuvable !"
-            exit 1
-          fi
-
-      - name: Copier les fichiers dans le dépôt APT
-        run: |
-          cp -r aptly_repo/public/* OrbProject-apt/
-
-      - name: Mettre à jour le dépôt APT
-        run: |
-          cd OrbProject-apt
-          git add .
-          git commit -m "Mise à jour du dépôt APT pour OrbProject v${VERSION}"
-          git push
+          set -e
+          aptly repo show orbproject-repo || aptly repo create orbproject-repo
+          aptly repo add orbproject-repo OrbProject_${{ env.VERSION }}_amd64.deb
+          aptly publish repo -batch -distribution=bullseye -component=main orbproject-repo public
 
   publish-yum:
     runs-on: ubuntu-latest
     needs: package
-
     steps:
-      - name: Récupérer le numéro de version depuis la release
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-        
-      - name: Installer createrepo-c
-        run: sudo apt update && sudo apt install -y createrepo-c
-
       - name: Télécharger le fichier RPM
         uses: actions/download-artifact@v4
         with:
           name: rpm-package
           path: artifacts
 
-      - name: Vérifier l'accès SSH à GitHub
-        run: ssh -T git@github.com || echo "❌ Impossible de se connecter à GitHub via SSH"
-
-      - name: Cloner le dépôt YUM
-        run: git clone --depth 1 https://github.com/OrbProject/OrbProject-yum.git yum_repo_git
-     
-      - name: Vérifier si le dépôt YUM a bien été cloné
-        run: ls -la yum_repo_git || echo "❌ Le dossier yum_repo_git est vide !"
-      
-      - name: Configurer la clé SSH pour Git (Correction)
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.YUM_REPO_TOKEN }}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa </dev/null
-          
-      - name: Vérifier que Git utilise bien SSH
-        run: |
-          cd yum_repo_git
-          git remote -v
-
-      - name: Forcer Git à utiliser SSH au lieu de HTTPS
-        run: |
-          cd yum_repo_git
-          git remote set-url origin git@github.com:OrbProject/OrbProject-yum.git
-
-      - name: Configurer l'identité Git pour YUM
-        run: |
-          git config --global user.email "eitelhugo10@gmail.com"
-          git config --global user.name "Hugo Eitel"
+      - name: Installer createrepo-c
+        run: sudo apt update && sudo apt install -y createrepo-c
 
       - name: Créer le dépôt YUM
         run: |
+          set -e
           mkdir -p yum_repo
           cp artifacts/*.rpm yum_repo/
           createrepo_c yum_repo/
 
-      - name: Copier les fichiers dans le dépôt YUM
+      - name: Cloner et mettre à jour le dépôt YUM
         run: |
+          set -e
+          git clone --depth 1 git@github.com:OrbProject/OrbProject-yum.git yum_repo_git
           cp -r yum_repo/* yum_repo_git/
-
-      - name: Vérifier la clé SSH
-        run: |
-          ls -l ~/.ssh/
-          cat ~/.ssh/id_rsa | head -n 5 || echo "❌ La clé SSH est introuvable ou illisible !"
-
-      - name: Tester l'accès SSH à GitHub
-        run: ssh -T git@github.com || echo "❌ Problème d'authentification SSH !"
-
-      - name: Mettre à jour le dépôt YUM
-        run: |
           cd yum_repo_git
           git add .
-          git commit -m "Mise à jour du dépôt YUM pour OrbProject v${VERSION}"
+          git commit -m "Mise à jour du dépôt YUM pour OrbProject v${{ env.VERSION }}"
           git push
 
-  #publish-flatpak:
-     #runs-on: ubuntu-latest
-    #needs: package
+  publish-flatpak:
+    runs-on: ubuntu-latest
+    needs: package
+    steps:
+      - name: Installer Flatpak et configurer Flathub
+        run: |
+          sudo apt update && sudo apt install -y flatpak flatpak-builder
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-#    steps:
-    #  - name: Installer Flatpak et configurer Flathub
-   #     run: |
-        #  sudo apt update && sudo apt install -y flatpak flatpak-builder
-       #   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-     # - name: Déployer sur Flathub
-      #  run: |
-   #       flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak com.orbproject.OrbProject
-         # flatpak build-import-bundle repo OrbProject_${{ env.VERSION }}.flatpak
-
-
+      - name: Construire et publier Flatpak
+        run: |
+          set -e
+          flatpak-builder --repo=repo build-dir orbproject.flatpak.json --force-clean
+          flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak com.orbproject.OrbProject
