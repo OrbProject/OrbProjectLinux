@@ -50,9 +50,9 @@ jobs:
           mkdir -p rpm/usr/lib/orbproject rpm/usr/bin
           cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
-          if [ ! -d "rpm/usr/lib/orbproject" ]; then
+          if [ ! -d "$PWD/rpm/usr/lib/orbproject" ]; then
             echo "❌ Erreur: Les fichiers ne sont pas copiés dans rpm/usr/lib/orbproject !" >&2
-            ls -R rpm/
+            ls -R $PWD/rpm/
             exit 1
           fi
           cat <<EOF > orbproject.spec
@@ -68,7 +68,7 @@ jobs:
           Un jeu Unity packagé pour Fedora.
           %install
           mkdir -p %{buildroot}/usr/lib/orbproject %{buildroot}/usr/bin
-          cp -r %{_topdir}/BUILD/rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || exit 1
+          cp -r $PWD/rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || exit 1
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
           %files
           /usr/lib/orbproject
@@ -76,6 +76,11 @@ jobs:
           %post
           echo 'Installation terminée!'
           EOF
+          if [ ! -d "$PWD/rpm/usr/lib/orbproject" ]; then
+            echo "❌ Erreur: Le dossier rpm/usr/lib/orbproject est introuvable avant la construction RPM !" >&2
+            ls -R $PWD/rpm/
+            exit 1
+          fi
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
 
       - name: Sauvegarder le fichier RPM
