@@ -335,7 +335,9 @@ jobs:
           ssh-add ~/.ssh/id_rsa </dev/null
           
       - name: Vérifier que Git utilise bien SSH
-        run: git remote -v
+        run: |
+          cd yum_repo_git
+          git remote -v
 
       - name: Forcer Git à utiliser SSH au lieu de HTTPS
         run: |
