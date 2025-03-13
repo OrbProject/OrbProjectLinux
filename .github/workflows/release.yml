@@ -213,7 +213,7 @@ jobs:
       - name: Créer le répertoire Aptly
         run: mkdir -p aptly_repo
 
-      - name: Configurer Aptly (Correction)
+      - name: Configurer Aptly
         run: |
           mkdir -p /home/runner/.aptly
           WORKSPACE_PATH=$(echo "$GITHUB_WORKSPACE" | sed 's/\//\\\//g')  # Échappe les `/`
@@ -230,11 +230,15 @@ jobs:
 
           # Vérifier si le fichier est bien valide
           cat /home/runner/.aptly.conf
+          
+      - name: Créer le dépôt Aptly si nécessaire
+        run: |
+          aptly repo show orbproject-repo || aptly repo create -distribution=bullseye -component=main orbproject-repo
 
       - name: Publier avec Aptly
         run: |
-          cd aptly_repo
-          aptly repo add orbproject-repo $GITHUB_WORKSPACE/OrbProject_${VERSION}_amd64.deb
+          aptly repo list
+          aptly repo add orbproject-repo OrbProject_${VERSION}_amd64.deb
           aptly publish repo -batch orbproject-repo
 
       - name: Configurer la clé SSH pour Git
@@ -293,6 +297,10 @@ jobs:
           echo "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Forcer Git à utiliser SSH au lieu de HTTPS
+        run: |
+          git remote set-url origin git@github.com:OrbProject/OrbProject-yum.git
 
       - name: Configurer l'identité Git pour YUM
         run: |
