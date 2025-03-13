@@ -254,9 +254,13 @@ jobs:
 
       - name: Publier avec Aptly
         run: |
-          aptly repo list
-          aptly repo add orbproject-repo OrbProject_${VERSION}_amd64.deb
-          aptly publish repo -batch orbproject-repo
+          cd aptly_repo
+          aptly repo add orbproject-repo $GITHUB_WORKSPACE/OrbProject_${VERSION}_amd64.deb
+          aptly publish list
+          aptly publish repo -batch orbproject-repo || echo "❌ Échec de la publication !"
+
+      - name: Vérifier le contenu de `aptly_repo/public/`
+        run: ls -R aptly_repo/public || echo "❌ Le dossier public/ est vide ou inexistant !"
 
       - name: Configurer la clé SSH pour Git
         run: |
@@ -276,6 +280,16 @@ jobs:
       - name: Vérifier et créer le répertoire OrbProject-apt
         run: |
           mkdir -p OrbProject-apt
+
+      - name: Vérifier si `aptly_repo/public/` existe
+        run: |
+          if [ -d "aptly_repo/public" ]; then
+            echo "📂 Le dossier aptly_repo/public/ existe."
+            ls -la aptly_repo/public/
+          else
+            echo "❌ Le dossier aptly_repo/public/ est introuvable !"
+            exit 1
+          fi
 
       - name: Copier les fichiers dans le dépôt APT
         run: |
@@ -317,9 +331,11 @@ jobs:
       - name: Configurer la clé SSH pour Git
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
+          printf "%s\n" "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
 
       - name: Forcer Git à utiliser SSH au lieu de HTTPS
         run: |
@@ -340,6 +356,14 @@ jobs:
       - name: Copier les fichiers dans le dépôt YUM
         run: |
           cp -r yum_repo/* yum_repo_git/
+
+      - name: Vérifier la clé SSH
+        run: |
+          ls -l ~/.ssh/
+          cat ~/.ssh/id_rsa | head -n 5 || echo "❌ La clé SSH est introuvable ou illisible !"
+
+      - name: Tester l'accès SSH à GitHub
+        run: ssh -T git@github.com || echo "❌ Problème d'authentification SSH !"
 
       - name: Mettre à jour le dépôt YUM
         run: |
