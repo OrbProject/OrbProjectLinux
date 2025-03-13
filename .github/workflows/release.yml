@@ -63,7 +63,12 @@ jobs:
           Un jeu Unity packagé pour Fedora.
           %install
           mkdir -p %{buildroot}/usr/lib/orbproject %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          if [ -d "rpm/usr/lib/orbproject" ]; then
+            cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          else
+            echo "❌ Erreur: rpm/usr/lib/orbproject est introuvable !" >&2
+            exit 1
+          fi
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
           %files
           /usr/lib/orbproject
