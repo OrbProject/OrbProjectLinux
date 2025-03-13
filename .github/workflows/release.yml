@@ -265,9 +265,11 @@ jobs:
       - name: Configurer la clé SSH pour Git
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.APT_REPO_TOKEN }}" > ~/.ssh/id_rsa
+          printf "%s\n" "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa </dev/null
 
       - name: Cloner le dépôt APT
         run: git clone --depth 1 https://github.com/OrbProject/OrbProject-apt.git OrbProject-apt
