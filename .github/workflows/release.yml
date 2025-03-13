@@ -248,19 +248,14 @@ jobs:
           # Vérifier si le fichier est bien valide
           cat /home/runner/.aptly.conf
           
-      - name: Créer le dépôt Aptly si nécessaire
-        run: |
-          aptly repo show orbproject-repo || aptly repo create -distribution=bullseye -component=main orbproject-repo
-
       - name: Publier avec Aptly
         run: |
           cd aptly_repo
-          aptly repo add orbproject-repo $GITHUB_WORKSPACE/OrbProject_${VERSION}_amd64.deb
-          aptly publish list
-          aptly publish repo -batch orbproject-repo || echo "❌ Échec de la publication !"
-
-      - name: Vérifier le contenu de `aptly_repo/public/`
-        run: ls -R aptly_repo/public || echo "❌ Le dossier public/ est vide ou inexistant !"
+          aptly publish repo -batch -distribution=bullseye -component=main orbproject-repo public || echo "❌ Échec de la publication !"
+      
+      - name: Vérifier les fichiers générés par Aptly
+        run: |
+          ls -R aptly_repo || echo "❌ Le dossier aptly_repo est vide !"
 
       - name: Configurer la clé SSH pour Git
         run: |
@@ -330,14 +325,17 @@ jobs:
       - name: Vérifier si le dépôt YUM a bien été cloné
         run: ls -la yum_repo_git || echo "❌ Le dossier yum_repo_git est vide !"
       
-      - name: Configurer la clé SSH pour Git
+      - name: Configurer la clé SSH pour Git (Correction)
         run: |
           mkdir -p ~/.ssh
-          printf "%s\n" "${{ secrets.YUM_REPO_TOKEN }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.YUM_REPO_TOKEN }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
+          ssh-add ~/.ssh/id_rsa </dev/null
+          
+      - name: Vérifier que Git utilise bien SSH
+        run: git remote -v
 
       - name: Forcer Git à utiliser SSH au lieu de HTTPS
         run: |
