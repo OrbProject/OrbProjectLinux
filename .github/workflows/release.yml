@@ -213,19 +213,23 @@ jobs:
       - name: Créer le répertoire Aptly
         run: mkdir -p aptly_repo
 
-      - name: Configurer Aptly
+      - name: Configurer Aptly (Correction)
         run: |
           mkdir -p /home/runner/.aptly
+          WORKSPACE_PATH=$(echo "$GITHUB_WORKSPACE" | sed 's/\//\\\//g')  # Échappe les `/`
           cat <<EOF > /home/runner/.aptly.conf
           {
             "storage": {
               "type": "local",
-              "path": "$GITHUB_WORKSPACE/aptly_repo"
+              "path": "${WORKSPACE_PATH}/aptly_repo"
             },
             "gpgKey": "A3F54D0B1001C0BD60D052A395E65A263E20BB8F",
             "gpgPassphrase": "orbproject"
           }
           EOF
+
+          # Vérifier si le fichier est bien valide
+          cat /home/runner/.aptly.conf
 
       - name: Publier avec Aptly
         run: |
