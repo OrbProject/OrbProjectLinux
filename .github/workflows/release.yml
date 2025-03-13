@@ -213,18 +213,35 @@ jobs:
       - name: Créer le répertoire Aptly
         run: mkdir -p aptly_repo
 
-      - name: Configurer Aptly
+      - name: Installer et initialiser GPG
         run: |
-          mkdir -p /home/runner/.aptly
-          WORKSPACE_PATH=$(echo "$GITHUB_WORKSPACE" | sed 's/\//\\\//g')  # Échappe les `/`
-          cat <<EOF > /home/runner/.aptly.conf
+          sudo apt update && sudo apt install -y gpg
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+      
+          # Générer une clé GPG si elle n'existe pas déjà
+          gpg --batch --gen-key <<EOF
+          %no-protection
+          Key-Type: RSA
+          Key-Length: 4096
+          Name-Real: OrbProject
+          Name-Email: orbproject@example.com
+          Expire-Date: 0
+          %commit
+          EOF
+      
+          # Vérifier que la clé a bien été créée
+          gpg --list-keys
+
+      - name: Configurer Aptly avec GPG
+        run: |
+          mkdir -p ~/.aptly
+          cat <<EOF > ~/.aptly.conf
           {
-            "storage": {
-              "type": "local",
-              "path": "${WORKSPACE_PATH}/aptly_repo"
-            },
-            "gpgKey": "A3F54D0B1001C0BD60D052A395E65A263E20BB8F",
-            "gpgPassphrase": "orbproject"
+            "gpg": {
+              "batch": true,
+              "default-key": "OrbProject"
+            }
           }
           EOF
 
@@ -288,9 +305,15 @@ jobs:
           name: rpm-package
           path: artifacts
 
+      - name: Vérifier l'accès SSH à GitHub
+        run: ssh -T git@github.com || echo "❌ Impossible de se connecter à GitHub via SSH"
+
       - name: Cloner le dépôt YUM
         run: git clone --depth 1 https://github.com/OrbProject/OrbProject-yum.git yum_repo_git
-
+     
+      - name: Vérifier si le dépôt YUM a bien été cloné
+        run: ls -la yum_repo_git || echo "❌ Le dossier yum_repo_git est vide !"
+      
       - name: Configurer la clé SSH pour Git
         run: |
           mkdir -p ~/.ssh
@@ -300,6 +323,7 @@ jobs:
 
       - name: Forcer Git à utiliser SSH au lieu de HTTPS
         run: |
+          cd yum_repo_git
           git remote set-url origin git@github.com:OrbProject/OrbProject-yum.git
 
       - name: Configurer l'identité Git pour YUM
