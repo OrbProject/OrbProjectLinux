@@ -64,8 +64,8 @@ jobs:
                 "name": "orbproject",
                 "buildsystem": "simple",
                 "build-commands": [
-                  "install -D OrbProject.x86_64 $FLATPAK_DEST/bin/OrbProject.x86_64",
-                  "install -D UnityPlayer.so $FLATPAK_DEST/lib/UnityPlayer.so"
+                  "install -D OrbProject.x86_64 /app/bin/OrbProject.x86_64",
+                  "install -D UnityPlayer.so /app/lib/UnityPlayer.so"
                 ],
                 "sources": [
                   {
