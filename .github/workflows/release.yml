@@ -44,83 +44,56 @@ jobs:
           name: deb-package
           path: OrbProject_${{ env.VERSION }}_amd64.deb
 
-      - name: Créer les dossiers et copier les fichiers
+      - name: Construire et publier Flatpak
         run: |
-          mkdir -p $PWD/rpm/usr/lib/orbproject
-          mkdir -p $PWD/rpm/usr/bin
+          sudo apt update && sudo apt install -y flatpak flatpak-builder
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-          # Vérifie que les fichiers existent avant de les copier
-          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
-
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
-
-      - name: Vérifier le contenu des répertoires
-        run: |
-          echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
-          mkdir -p /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject  # Création du dossier ici !
-          ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
-
-          echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
-          ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
-
-      - name: Générer le fichier spec et construire le RPM
-        run: |
-          cat <<EOF > orbproject.spec
-          Name: orbproject
-          Version: ${VERSION}
-          Release: 1
-          Summary: Un jeu fait avec Unity
-          License: Proprietary
-          Group: Games
-          BuildArch: x86_64
-          Requires: libc.so.6
-
-          %description
-          Un jeu Unity packagé pour Fedora.
-
-          %install
-          mkdir -p %{buildroot}/usr/lib/orbproject
-          mkdir -p %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
-
-          %files
-          /usr/lib/orbproject
-          /usr/bin/orbproject
-
-          %post
-          echo 'Installation terminée!'
+          mkdir -p flatpak-build
+          cd flatpak-build
+          cat <<EOF > org.orbproject.OrbProject.json
+          {
+            "app-id": "org.orbproject.OrbProject",
+            "runtime": "org.freedesktop.Platform",
+            "runtime-version": "21.08",
+            "sdk": "org.freedesktop.Sdk",
+            "command": "OrbProject.x86_64",
+            "modules": [
+              {
+                "name": "orbproject",
+                "buildsystem": "simple",
+                "build-commands": [
+                  "install -D OrbProject.x86_64 $FLATPAK_DEST/bin/OrbProject.x86_64",
+                  "install -D UnityPlayer.so $FLATPAK_DEST/lib/UnityPlayer.so"
+                ],
+                "sources": [
+                  {
+                    "type": "file",
+                    "path": "../OrbProject.x86_64"
+                  },
+                  {
+                    "type": "file",
+                    "path": "../UnityPlayer.so"
+                  }
+                ]
+              }
+            ]
+          }
           EOF
 
-          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-      - name: Vérifier le fichier RPM généré
-        run: |
-          echo "📁 Liste des fichiers RPM générés :"
-          find ~/rpmbuild/RPMS/ -name "*.rpm" || echo "❌ AUCUN fichier RPM trouvé !"
+          flatpak-builder --repo=repo build-dir org.orbproject.OrbProject.json --force-clean
+          flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak org.orbproject.OrbProject
 
-      - name: Copier le RPM dans le dossier de build
-        run: |
-          mkdir -p artifacts
-          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
-
-        shell: bash
-        env:
-          VERSION: ${{ env.VERSION }}
-
-      - name: Sauvegarder le fichier RPM
+      - name: Sauvegarder le fichier Flatpak
         uses: actions/upload-artifact@v4
         with:
-          name: rpm-package
-          path: artifacts/*.rpm
+          name: flatpak-package
+          path: OrbProject_${{ env.VERSION }}.flatpak
 
   publish-apt:
     runs-on: ubuntu-latest
     needs: package
     steps:
-      - name: Récupérer le numéro de version depuis la release
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-        
       - name: Télécharger le fichier .deb
         uses: actions/download-artifact@v4
         with:
@@ -130,7 +103,7 @@ jobs:
       - name: Installer Aptly
         run: sudo apt-get update && sudo apt-get install -y aptly
 
-      - name: Vérifier et publier avec Aptly
+      - name: Publier avec Aptly
         run: |
           set -e
           aptly repo show orbproject-repo || aptly repo create orbproject-repo
@@ -157,7 +130,7 @@ jobs:
           cp artifacts/*.rpm yum_repo/
           createrepo_c yum_repo/
 
-      - name: Cloner et mettre à jour le dépôt YUM
+      - name: Mettre à jour le dépôt YUM
         run: |
           set -e
           git clone --depth 1 git@github.com:OrbProject/OrbProject-yum.git yum_repo_git
@@ -166,18 +139,3 @@ jobs:
           git add .
           git commit -m "Mise à jour du dépôt YUM pour OrbProject v${{ env.VERSION }}"
           git push
-
-  publish-flatpak:
-    runs-on: ubuntu-latest
-    needs: package
-    steps:
-      - name: Installer Flatpak et configurer Flathub
-        run: |
-          sudo apt update && sudo apt install -y flatpak flatpak-builder
-          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-      - name: Construire et publier Flatpak
-        run: |
-          set -e
-          flatpak-builder --repo=repo build-dir orbproject.flatpak.json --force-clean
-          flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak com.orbproject.OrbProject
