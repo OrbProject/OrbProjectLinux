@@ -44,7 +44,7 @@ jobs:
           name: deb-package
           path: OrbProject_${{ env.VERSION }}_amd64.deb
 
-      - name: Construire et publier Flatpak
+      - name: Construire le package Flatpak
         run: |
           sudo apt update && sudo apt install -y flatpak flatpak-builder
           flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -82,9 +82,28 @@ jobs:
           EOF
 
           flatpak-builder --repo=repo build-dir org.orbproject.OrbProject.json --force-clean
+
+      - name: Sauvegarder les fichiers de build Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-build
+          path: repo
+
+  publish-flatpak:
+    runs-on: ubuntu-latest
+    needs: package
+    steps:
+      - name: Télécharger les fichiers de build Flatpak
+        uses: actions/download-artifact@v4
+        with:
+          name: flatpak-build
+          path: repo
+
+      - name: Publier Flatpak
+        run: |
           flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak org.orbproject.OrbProject
 
-      - name: Sauvegarder le fichier Flatpak
+      - name: Sauvegarder le fichier Flatpak final
         uses: actions/upload-artifact@v4
         with:
           name: flatpak-package
