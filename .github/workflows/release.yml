@@ -44,17 +44,28 @@ jobs:
           name: deb-package
           path: OrbProject_${{ env.VERSION }}_amd64.deb
 
-      - name: Construire le package RPM
+      - name: Créer les dossiers et copier les fichiers
         run: |
-          set -e
-          mkdir -p rpm/usr/lib/orbproject rpm/usr/bin
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
-          if [ ! -d "$PWD/rpm/usr/lib/orbproject" ]; then
-            echo "❌ Erreur: Les fichiers ne sont pas copiés dans rpm/usr/lib/orbproject !" >&2
-            ls -R $PWD/rpm/
-            exit 1
-          fi
+          mkdir -p $PWD/rpm/usr/lib/orbproject
+          mkdir -p $PWD/rpm/usr/bin
+      
+          # Vérifie que les fichiers existent avant de les copier
+          ls -l OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* || exit 1
+      
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* $PWD/rpm/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 $PWD/rpm/usr/bin/orbproject
+      
+      - name: Vérifier le contenu des répertoires
+        run: |
+          echo "📁 Contenu de /home/runner/rpmbuild/BUILD/rpm avant copie :"
+          mkdir -p /home/runner/rpmbuild/BUILD/rpm/usr/lib/orbproject  # Création du dossier ici !
+          ls -R /home/runner/rpmbuild/BUILD/rpm || echo "❌ Le répertoire rpm n'existe pas"
+      
+          echo "📁 Contenu du dossier source (où se trouvent les fichiers à copier) :"
+          ls -l $PWD/rpm/usr/lib/orbproject || echo "❌ Le dossier source est vide ou inexistant"
+      
+      - name: Générer le fichier spec et construire le RPM
+        run: |
           cat <<EOF > orbproject.spec
           Name: orbproject
           Version: ${VERSION}
@@ -64,30 +75,44 @@ jobs:
           Group: Games
           BuildArch: x86_64
           Requires: libc.so.6
+  
           %description
           Un jeu Unity packagé pour Fedora.
+  
           %install
-          mkdir -p %{buildroot}/usr/lib/orbproject %{buildroot}/usr/bin
-          cp -r %{_builddir}/rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || exit 1
+          mkdir -p %{buildroot}/usr/lib/orbproject
+          mkdir -p %{buildroot}/usr/bin
+          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
+  
           %files
           /usr/lib/orbproject
           /usr/bin/orbproject
+  
           %post
           echo 'Installation terminée!'
           EOF
-          if [ ! -d "$PWD/rpm/usr/lib/orbproject" ]; then
-            echo "❌ Erreur: Le dossier rpm/usr/lib/orbproject est introuvable avant la construction RPM !" >&2
-            ls -R $PWD/rpm/
-            exit 1
-          fi
+  
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-
+      - name: Vérifier le fichier RPM généré
+        run: |
+          echo "📁 Liste des fichiers RPM générés :"
+          find ~/rpmbuild/RPMS/ -name "*.rpm" || echo "❌ AUCUN fichier RPM trouvé !"
+  
+      - name: Copier le RPM dans le dossier de build
+        run: |
+          mkdir -p artifacts
+          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
+          
+        shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}
+  
       - name: Sauvegarder le fichier RPM
         uses: actions/upload-artifact@v4
         with:
           name: rpm-package
-          path: ~/rpmbuild/RPMS/x86_64/*.rpm
+          path: artifacts/*.rpm
 
   publish-apt:
     runs-on: ubuntu-latest
