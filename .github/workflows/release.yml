@@ -78,6 +78,7 @@ jobs:
           EOF
 
           ls -R rpm
+          ls -R rpm/usr/lib/orbproject
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
           ls -l ~/rpmbuild/RPMS/x86_64/
 
