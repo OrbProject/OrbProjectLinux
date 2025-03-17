@@ -83,11 +83,20 @@ jobs:
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
           ls -l ~/rpmbuild/RPMS/x86_64/
 
+      - name: Copier le RPM dans le dossier de build
+        run: |
+          mkdir -p artifacts
+          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
+
+        shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}
+
       - name: Sauvegarder le fichier RPM
         uses: actions/upload-artifact@v4
         with:
           name: rpm-package
-          path: rpmbuild/RPMS/x86_64/*.rpm
+          path: artifacts/*.rpm
 
       - name: Construire le package Flatpak
         run: |
