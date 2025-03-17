@@ -66,7 +66,8 @@ jobs:
           %install
           mkdir -p %{buildroot}/usr/lib/orbproject
           mkdir -p %{buildroot}/usr/bin
-          cp -r $PWD/rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          cp -a $PWD/rpm/usr/lib/orbproject/* %{buildroot}/usr/lib/orbproject/
+          ls -l %{buildroot}/usr/lib/orbproject
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
 
           %files
