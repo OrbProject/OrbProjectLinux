@@ -78,12 +78,13 @@ jobs:
           EOF
 
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+          ls -l ~/rpmbuild/RPMS/x86_64/
 
       - name: Sauvegarder le fichier RPM
         uses: actions/upload-artifact@v4
         with:
           name: rpm-package
-          path: ~/rpmbuild/RPMS/x86_64/*.rpm
+          path: $PWD/rpmbuild/RPMS/x86_64/*.rpm
 
       - name: Construire le package Flatpak
         run: |
@@ -124,6 +125,7 @@ jobs:
           EOF
 
           flatpak-builder --repo=repo build-dir org.orbproject.OrbProject.json --force-clean
+          ls -l repo
 
       - name: Sauvegarder les fichiers de build Flatpak
         uses: actions/upload-artifact@v4
@@ -165,6 +167,9 @@ jobs:
           name: deb-package
           path: .
 
+      - name: Vérifier les fichiers téléchargés
+        run: ls -l
+
       - name: Installer Aptly
         run: sudo apt-get update && sudo apt-get install -y aptly
 
@@ -172,6 +177,7 @@ jobs:
         run: |
           set -e
           aptly repo show orbproject-repo || aptly repo create orbproject-repo
+          ls -l
           aptly repo add orbproject-repo OrbProject_${{ env.VERSION }}_amd64.deb
           aptly publish repo -batch -distribution=bullseye -component=main orbproject-repo public
 
