@@ -44,6 +44,47 @@ jobs:
           name: deb-package
           path: OrbProject_${{ env.VERSION }}_amd64.deb
 
+      - name: Construire le package RPM
+        run: |
+          set -e
+          mkdir -p rpm/usr/lib/orbproject rpm/usr/bin
+          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
+          cat <<EOF > orbproject.spec
+          Name: orbproject
+          Version: ${VERSION}
+          Release: 1
+          Summary: Un jeu fait avec Unity
+          License: Proprietary
+          Group: Games
+          BuildArch: x86_64
+          Requires: libc.so.6
+
+          %description
+          Un jeu Unity packagé pour Fedora.
+
+          %install
+          mkdir -p %{buildroot}/usr/lib/orbproject
+          mkdir -p %{buildroot}/usr/bin
+          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
+
+          %files
+          /usr/lib/orbproject
+          /usr/bin/orbproject
+
+          %post
+          echo 'Installation terminée!'
+          EOF
+
+          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
+
+      - name: Sauvegarder le fichier RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: ~/rpmbuild/RPMS/x86_64/*.rpm
+
       - name: Construire le package Flatpak
         run: |
           sudo apt update && sudo apt install -y flatpak flatpak-builder
@@ -114,6 +155,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: package
     steps:
+    
+      - name: Récupérer le numéro de version depuis la release
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      
       - name: Télécharger le fichier .deb
         uses: actions/download-artifact@v4
         with:
