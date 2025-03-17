@@ -66,8 +66,7 @@ jobs:
           %install
           mkdir -p %{buildroot}/usr/lib/orbproject
           mkdir -p %{buildroot}/usr/bin
-          cp -a $PWD/rpm/usr/lib/orbproject/* %{buildroot}/usr/lib/orbproject/
-          ls -l %{buildroot}/usr/lib/orbproject
+          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
 
           %files
@@ -78,17 +77,20 @@ jobs:
           echo 'Installation terminée!'
           EOF
 
-          ls -R rpm
-          ls -l rpm/usr/lib/orbproject
-          ls -R rpm/usr/lib/orbproject
-          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-          ls -l ~/rpmbuild/RPMS/x86_64/
+      - name: Copier le RPM dans le dossier de build
+        run: |
+          mkdir -p artifacts
+          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
+
+        shell: bash
+        env:
+          VERSION: ${{ env.VERSION }}
 
       - name: Sauvegarder le fichier RPM
         uses: actions/upload-artifact@v4
         with:
           name: rpm-package
-          path: rpmbuild/RPMS/x86_64/*.rpm
+          path: artifacts/*.rpm
 
       - name: Construire le package Flatpak
         run: |
@@ -208,7 +210,7 @@ jobs:
       - name: Mettre à jour le dépôt YUM
         run: |
           set -e
-          git clone --depth 1 https://github.com/OrbProject/OrbProject-yum.git yum_repo_git
+          git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/OrbProject/OrbProject-yum.git yum_repo_git
           cp -r yum_repo/* yum_repo_git/
           cd yum_repo_git
           git add .
