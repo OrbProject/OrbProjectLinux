@@ -66,7 +66,7 @@ jobs:
           %install
           mkdir -p %{buildroot}/usr/lib/orbproject
           mkdir -p %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/
+          cp -r %{_builddir}/rpm/usr/lib/orbproject %{buildroot}/usr/lib/
           ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
 
           %files
@@ -77,6 +77,7 @@ jobs:
           echo 'Installation terminée!'
           EOF
 
+          ls -R rpm
           rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
           ls -l ~/rpmbuild/RPMS/x86_64/
 
