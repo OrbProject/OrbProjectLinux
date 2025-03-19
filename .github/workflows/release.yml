@@ -186,11 +186,23 @@ jobs:
       - name: Installer Aptly
         run: sudo apt-get update && sudo apt-get install -y aptly
 
+      - name: Installer GPG
+        run: sudo apt-get update && sudo apt-get install -y gnupg
+      
       - name: Publier avec Aptly
         run: |
           set -e
+          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
           aptly repo show orbproject-repo || aptly repo create orbproject-repo
           ls -l
+          gpg --list-keys || gpg --batch --gen-key <<EOF
+            %no-protection
+            Key-Type: RSA
+            Key-Length: 4096
+            Name-Real: OrbProject Repo
+            Name-Email: orbproject@example.com
+            Expire-Date: 0
+          EOF
           aptly repo add orbproject-repo OrbProject_${{ env.VERSION }}_amd64.deb
           aptly publish repo -batch -distribution=bullseye -component=main orbproject-repo public
 
