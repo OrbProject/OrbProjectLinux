@@ -8,7 +8,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-22.04
     env:
-      # Tag name of the GitHub release (ex: "v1.2.0")
+      # Tag name of the GitHub release (ex: "v1.2.0")
       VERSION: ${{ github.event.release.tag_name }}
 
     steps:
@@ -33,21 +33,26 @@ jobs:
       # ----------------------------------------------------
       - name: Download Unity Linux build
         env:
-          BUILD_URL: "https://builds.orbprojectmanagement.com/Linux/"
+          BUILD_URL: ${{ secrets.BUILD_URL }}   # Doit pointer vers le FICHIER .zip, pas juste un répertoire
+          ZIP_FILE: Build_Linux.zip
         run: |
-          curl -L "$BUILD_URL" -o Build_Linux.zip
-          unzip -q Build_Linux.zip
-          # L'archive crée un dossier "Build_Linux" tel que montré sur la capture.
+          echo "Fetching $ZIP_FILE from $BUILD_URL"
+          curl -fL "$BUILD_URL" -o "$ZIP_FILE"
+          # Vérifie que la taille est > 1 Mo (évite les HTML d'index mal téléchargés)
+          if [ $(stat --printf="%s" "$ZIP_FILE") -lt 1048576 ]; then
+            echo "::error::Downloaded ZIP is smaller than 1 MB – BUILD_URL is probably not the direct file URL." >&2
+            exit 1
+          fi
+          unzip -q "$ZIP_FILE"
 
       # ----------------------------------------------------
       # 3. Récupération / conversion de l'icône
       # ----------------------------------------------------
       - name: Download & convert icon to PNG
         env:
-          ICON_URL: "https://builds.orbprojectmanagement.com/Images/logo.ico"
+          ICON_URL: ${{ secrets.ICON_URL }}
         run: |
-          curl -L "$ICON_URL" -o icon_source
-          # Convertit BMP/ICO → PNG haute résolution (512×512).
+          curl -fL "$ICON_URL" -o icon_source
           convert icon_source -resize 512x512\> icon.png
 
       # ----------------------------------------------------
@@ -55,20 +60,17 @@ jobs:
       # ----------------------------------------------------
       - name: Prepare AppDir structure
         run: |
-          # Copie tous les fichiers du build Unity dans /usr/share/OrbProject
           mkdir -p AppDir/usr/share/OrbProject
           cp -r Build_Linux/* AppDir/usr/share/OrbProject/
 
-          # Crée un lanceur "OrbProject" dans /usr/bin
           mkdir -p AppDir/usr/bin
           cat > AppDir/usr/bin/OrbProject <<'EOF'
           #!/bin/sh
-          HERE="$(dirname "$(readlink -f "$0")")"
+          HERE="$(dirname \"$(readlink -f \"$0\")")"
           exec "$HERE/../share/OrbProject/OrbProject.x86_64" "$@"
           EOF
           chmod +x AppDir/usr/bin/OrbProject
 
-          # Icône et fichier .desktop (AppImage / Flatpak / paquets)
           cp icon.png AppDir/OrbProject.png
           cat > AppDir/OrbProject.desktop <<'EOF'
           [Desktop Entry]
