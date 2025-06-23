@@ -73,9 +73,9 @@ jobs:
         run: |
           fpm -s dir -t deb -n OrbProject -v ${VERSION#v} \
               --architecture amd64 \
-              --maintainer "Ton Nom <email@example.com>" \
+              --maintainer "orbProject <noreply@orbprojectmanagement.com>" \
               --license MIT \
-              --description "Mon jeu Unity pour Linux" \
+              --description "Orb Project Management" \
               --url "https://github.com/${{ github.repository }}" \
               --depends "libgtk-3-0" --depends "libnss3" \
               -C AppDir usr
