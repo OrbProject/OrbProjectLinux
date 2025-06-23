@@ -8,56 +8,40 @@ jobs:
   build-linux:
     runs-on: ubuntu-22.04
     env:
-      # Tag name of the GitHub release (ex: "v1.2.0")
       VERSION: ${{ github.event.release.tag_name }}
 
     steps:
-      # ----------------------------------------------------
-      # 0. Checkout (utile pour le manifeste Flatpak, etc.)
-      # ----------------------------------------------------
       - uses: actions/checkout@v4
 
-      # ----------------------------------------------------
-      # 1. Outils nécessaires au packaging
-      # ----------------------------------------------------
       - name: Install packaging dependencies
         run: |
           sudo apt update
           sudo apt install -y build-essential unzip imagemagick libfuse2 \
               flatpak flatpak-builder \
-              ruby-dev zlib1g-dev libffi-dev
+              ruby-dev zlib1g-dev libffi-dev icnsutils
           sudo gem install --no-document fpm
 
-      # ----------------------------------------------------
-      # 2. Récupération du build Unity (archive .zip)
-      # ----------------------------------------------------
       - name: Download Unity Linux build
         env:
-          BUILD_URL: "https://builds.orbprojectmanagement.com/Linux/Build_Linux.zip"   # Doit pointer vers le FICHIER .zip, pas juste un répertoire
+          BUILD_URL: "https://builds.orbprojectmanagement.com/Linux/Build_Linux.zip"
           ZIP_FILE: Build_Linux.zip
         run: |
           echo "Fetching $ZIP_FILE from $BUILD_URL"
           curl -fL "$BUILD_URL" -o "$ZIP_FILE"
-          # Vérifie que la taille est > 1 Mo (évite les HTML d'index mal téléchargés)
           if [ $(stat --printf="%s" "$ZIP_FILE") -lt 1048576 ]; then
-            echo "::error::Downloaded ZIP is smaller than 1 MB – BUILD_URL is probably not the direct file URL." >&2
+            echo "::error::Downloaded ZIP is too small to be valid." >&2
             exit 1
           fi
           unzip -q "$ZIP_FILE"
 
-      # ----------------------------------------------------
-      # 3. Récupération / conversion de l'icône
-      # ----------------------------------------------------
       - name: Download & convert icon to PNG
         env:
           ICON_URL: "https://builds.orbprojectmanagement.com/Images/logo.ico"
         run: |
-          curl -fL "$ICON_URL" -o icon_source
-          convert icon_source -resize 512x512\> icon.png
+          curl -fL "$ICON_URL" -o icon.ico
+          icns2png -x -o extracted_icons icon.ico
+          cp extracted_icons/icon_512x512x32.png icon.png
 
-      # ----------------------------------------------------
-      # 4. Préparation de l'AppDir (base commune)
-      # ----------------------------------------------------
       - name: Prepare AppDir structure
         run: |
           mkdir -p AppDir/usr/share/OrbProject
@@ -81,18 +65,12 @@ jobs:
           Categories=Game;
           EOF
 
-      # ----------------------------------------------------
-      # 5. AppImage
-      # ----------------------------------------------------
       - name: Build AppImage
         uses: appimagecrafters/build-appimage@v1
         with:
           appdir: AppDir
           output: OrbProject-${{ env.VERSION }}.AppImage
 
-      # ----------------------------------------------------
-      # 6. Paquet .deb
-      # ----------------------------------------------------
       - name: Build .deb package
         run: |
           fpm -s dir -t deb -n OrbProject -v ${VERSION#v} \
@@ -104,9 +82,6 @@ jobs:
               --depends "libgtk-3-0" --depends "libnss3" \
               -C AppDir usr
 
-      # ----------------------------------------------------
-      # 7. Paquet .rpm
-      # ----------------------------------------------------
       - name: Build .rpm package
         run: |
           fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
@@ -116,9 +91,6 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-      # ----------------------------------------------------
-      # 8. Flatpak
-      # ----------------------------------------------------
       - name: Build Flatpak bundle
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
@@ -128,9 +100,6 @@ jobs:
           cache: true
           archs: x86_64
 
-      # ----------------------------------------------------
-      # 9. Publication des artefacts dans la release
-      # ----------------------------------------------------
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
