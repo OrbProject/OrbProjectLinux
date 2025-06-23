@@ -33,7 +33,7 @@ jobs:
       # ----------------------------------------------------
       - name: Download Unity Linux build
         env:
-          BUILD_URL: ${{ secrets.BUILD_URL }}   # Doit pointer vers le FICHIER .zip, pas juste un répertoire
+          BUILD_URL: "https://builds.orbprojectmanagement.com/Linux/Build_Linux.zip"   # Doit pointer vers le FICHIER .zip, pas juste un répertoire
           ZIP_FILE: Build_Linux.zip
         run: |
           echo "Fetching $ZIP_FILE from $BUILD_URL"
@@ -50,7 +50,7 @@ jobs:
       # ----------------------------------------------------
       - name: Download & convert icon to PNG
         env:
-          ICON_URL: ${{ secrets.ICON_URL }}
+          ICON_URL: "https://builds.orbprojectmanagement.com/Images/logo.ico"
         run: |
           curl -fL "$ICON_URL" -o icon_source
           convert icon_source -resize 512x512\> icon.png
