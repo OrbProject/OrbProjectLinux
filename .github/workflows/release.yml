@@ -1,237 +1,139 @@
-name: Package and Release Linux Builds
+name: Release Linux Installers
 
 on:
   release:
-    types: [created]
-
-permissions:
-  contents: write
+    types: [published]
 
 jobs:
-  package:
-    runs-on: ubuntu-latest
+  build-linux:
+    runs-on: ubuntu-22.04
+    env:
+      # Tag name of the GitHub release (ex: "v1.2.0")
+      VERSION: ${{ github.event.release.tag_name }}
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      # ----------------------------------------------------
+      # 0. Checkout (utile pour le manifeste Flatpak, etc.)
+      # ----------------------------------------------------
+      - uses: actions/checkout@v4
 
-      - name: Récupérer le numéro de version depuis la release
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-
-      - name: Afficher la structure des fichiers
-        run: ls -R
-
-      - name: Préparer et construire le package .deb
+      # ----------------------------------------------------
+      # 1. Outils nécessaires au packaging
+      # ----------------------------------------------------
+      - name: Install packaging dependencies
         run: |
-          set -e
-          mkdir -p debian/DEBIAN debian/usr/lib/orbproject debian/usr/bin
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* debian/usr/lib/orbproject/
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 debian/usr/bin/orbproject
-          cat <<EOF > debian/DEBIAN/control
-          Package: orbproject
-          Version: $VERSION
-          Section: games
-          Priority: optional
-          Architecture: amd64
-          Depends: libc6
-          Maintainer: TonNom <ton.email@example.com>
-          Description: Un jeu fait avec Unity
-          EOF
-          dpkg-deb --build debian OrbProject_${VERSION}_amd64.deb
+          sudo apt update
+          sudo apt install -y build-essential unzip imagemagick libfuse2 \
+              flatpak flatpak-builder \
+              ruby-dev zlib1g-dev libffi-dev
+          gem install --no-document fpm
 
-      - name: Sauvegarder le fichier .deb
-        uses: actions/upload-artifact@v4
-        with:
-          name: deb-package
-          path: OrbProject_${{ env.VERSION }}_amd64.deb
-
-      - name: Construire le package RPM
-        run: |
-          set -e
-          mkdir -p rpm/usr/lib/orbproject rpm/usr/bin
-          cp -r OrbProject.x86_64 OrbProject_Data UnityPlayer.so libdecor-*.so* rpm/usr/lib/orbproject/
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 rpm/usr/bin/orbproject
-          cat <<EOF > orbproject.spec
-          Name: orbproject
-          Version: ${VERSION}
-          Release: 1
-          Summary: Un jeu fait avec Unity
-          License: Proprietary
-          Group: Games
-          BuildArch: x86_64
-          Requires: libc.so.6
-
-          %description
-          Un jeu Unity packagé pour Fedora.
-
-          %install
-          mkdir -p %{buildroot}/usr/lib/orbproject
-          mkdir -p %{buildroot}/usr/bin
-          cp -r rpm/usr/lib/orbproject %{buildroot}/usr/lib/ || echo "⚠️ Problème de copie !"
-          ln -s /usr/lib/orbproject/OrbProject.x86_64 %{buildroot}/usr/bin/orbproject
-
-          %files
-          /usr/lib/orbproject
-          /usr/bin/orbproject
-
-          %post
-          echo 'Installation terminée!'
-          EOF
-          
-          rpmbuild -bb orbproject.spec --buildroot=$PWD/rpm
-          
-      - name: Vérifier le fichier RPM généré
-        run: |
-          echo "📁 Liste des fichiers RPM générés :"
-          find ~/rpmbuild/RPMS/ -name "*.rpm" || echo "❌ AUCUN fichier RPM trouvé !"
-
-      - name: Copier le RPM dans le dossier de build
-        run: |
-          mkdir -p artifacts
-          cp $HOME/rpmbuild/RPMS/x86_64/*.rpm artifacts/
-
-        shell: bash
+      # ----------------------------------------------------
+      # 2. Récupération du build Unity (archive .zip)
+      # ----------------------------------------------------
+      - name: Download Unity Linux build
         env:
-          VERSION: ${{ env.VERSION }}
-
-      - name: Sauvegarder le fichier RPM
-        uses: actions/upload-artifact@v4
-        with:
-          name: rpm-package
-          path: artifacts/*.rpm
-
-      - name: Construire le package Flatpak
+          BUILD_URL: "https://builds.orbprojectmanagement.com/Linux/"
         run: |
-          sudo apt update && sudo apt install -y flatpak flatpak-builder
-          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub org.freedesktop.Sdk//21.08 org.freedesktop.Platform//21.08
+          curl -L "$BUILD_URL" -o Build_Linux.zip
+          unzip -q Build_Linux.zip
+          # L'archive crée un dossier "Build_Linux" tel que montré sur la capture.
 
-          mkdir -p flatpak-build
-          cd flatpak-build
-          cat <<EOF > org.orbproject.OrbProject.json
-          {
-            "app-id": "org.orbproject.OrbProject",
-            "runtime": "org.freedesktop.Platform",
-            "runtime-version": "21.08",
-            "sdk": "org.freedesktop.Sdk",
-            "command": "OrbProject.x86_64",
-            "modules": [
-              {
-                "name": "orbproject",
-                "buildsystem": "simple",
-                "build-commands": [
-                  "install -D OrbProject.x86_64 /app/bin/OrbProject.x86_64",
-                  "install -D UnityPlayer.so /app/lib/UnityPlayer.so"
-                ],
-                "sources": [
-                  {
-                    "type": "file",
-                    "path": "../OrbProject.x86_64"
-                  },
-                  {
-                    "type": "file",
-                    "path": "../UnityPlayer.so"
-                  }
-                ]
-              }
-            ]
-          }
+      # ----------------------------------------------------
+      # 3. Récupération / conversion de l'icône
+      # ----------------------------------------------------
+      - name: Download & convert icon to PNG
+        env:
+          ICON_URL: "https://builds.orbprojectmanagement.com/Images/logo.ico"
+        run: |
+          curl -L "$ICON_URL" -o icon_source
+          # Convertit BMP/ICO → PNG haute résolution (512×512).
+          convert icon_source -resize 512x512\> icon.png
+
+      # ----------------------------------------------------
+      # 4. Préparation de l'AppDir (base commune)
+      # ----------------------------------------------------
+      - name: Prepare AppDir structure
+        run: |
+          # Copie tous les fichiers du build Unity dans /usr/share/OrbProject
+          mkdir -p AppDir/usr/share/OrbProject
+          cp -r Build_Linux/* AppDir/usr/share/OrbProject/
+
+          # Crée un lanceur "OrbProject" dans /usr/bin
+          mkdir -p AppDir/usr/bin
+          cat > AppDir/usr/bin/OrbProject <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/../share/OrbProject/OrbProject.x86_64" "$@"
+          EOF
+          chmod +x AppDir/usr/bin/OrbProject
+
+          # Icône et fichier .desktop (AppImage / Flatpak / paquets)
+          cp icon.png AppDir/OrbProject.png
+          cat > AppDir/OrbProject.desktop <<'EOF'
+          [Desktop Entry]
+          Name=OrbProject
+          Exec=OrbProject
+          Icon=OrbProject
+          Type=Application
+          Categories=Game;
           EOF
 
-          flatpak-builder --repo=repo build-dir org.orbproject.OrbProject.json --force-clean
-          ls -l repo
-
-      - name: Sauvegarder les fichiers de build Flatpak
-        uses: actions/upload-artifact@v4
+      # ----------------------------------------------------
+      # 5. AppImage
+      # ----------------------------------------------------
+      - name: Build AppImage
+        uses: appimagecrafters/build-appimage@v1
         with:
-          name: flatpak-build
-          path: repo
+          appdir: AppDir
+          output: OrbProject-${{ env.VERSION }}.AppImage
 
-  publish-flatpak:
-    runs-on: ubuntu-latest
-    needs: package
-    steps:
-      - name: Télécharger les fichiers de build Flatpak
-        uses: actions/download-artifact@v4
-        with:
-          name: flatpak-build
-          path: repo
-
-      - name: Publier Flatpak
+      # ----------------------------------------------------
+      # 6. Paquet .deb
+      # ----------------------------------------------------
+      - name: Build .deb package
         run: |
-          flatpak build-bundle repo OrbProject_${{ env.VERSION }}.flatpak org.orbproject.OrbProject
+          fpm -s dir -t deb -n OrbProject -v ${VERSION#v} \
+              --architecture amd64 \
+              --maintainer "Ton Nom <email@example.com>" \
+              --license MIT \
+              --description "Mon jeu Unity pour Linux" \
+              --url "https://github.com/${{ github.repository }}" \
+              --depends "libgtk-3-0" --depends "libnss3" \
+              -C AppDir usr
 
-      - name: Sauvegarder le fichier Flatpak final
-        uses: actions/upload-artifact@v4
-        with:
-          name: flatpak-package
-          path: OrbProject_${{ env.VERSION }}.flatpak
-
-  publish-apt:
-    runs-on: ubuntu-latest
-    needs: package
-    steps:
-
-      - name: Récupérer le numéro de version depuis la release
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-
-      - name: Télécharger le fichier .deb
-        uses: actions/download-artifact@v4
-        with:
-          name: deb-package
-          path: .
-
-      - name: Vérifier les fichiers téléchargés
-        run: ls -l
-
-      - name: Installer Aptly
-        run: sudo apt-get update && sudo apt-get install -y aptly
-
-      - name: Installer GPG
-        run: sudo apt-get update && sudo apt-get install -y gnupg
-      
-      - name: Publier avec Aptly
+      # ----------------------------------------------------
+      # 7. Paquet .rpm
+      # ----------------------------------------------------
+      - name: Build .rpm package
         run: |
-          set -e
-          mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
-          aptly repo show orbproject-repo || aptly repo create orbproject-repo
-          ls -l
-          gpg --list-keys || gpg --batch --gen-key <<EOF
-            %no-protection
-            Key-Type: RSA
-            Key-Length: 4096
-            Name-Real: OrbProject Repo
-            Name-Email: orbproject@example.com
-            Expire-Date: 0
-          EOF
-          aptly repo add orbproject-repo OrbProject_${{ env.VERSION }}_amd64.deb
-          aptly publish repo -batch -distribution=bullseye -component=main orbproject-repo public
+          fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
+              --architecture x86_64 \
+              --license MIT \
+              --url "https://github.com/${{ github.repository }}" \
+              --depends "gtk3" \
+              -C AppDir usr
 
-  publish-yum:
-    runs-on: ubuntu-latest
-    needs: package
-    steps:
-      - name: Télécharger le fichier RPM
-        uses: actions/download-artifact@v4
+      # ----------------------------------------------------
+      # 8. Flatpak
+      # ----------------------------------------------------
+      - name: Build Flatpak bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          name: rpm-package
-          path: artifacts
+          manifest-path: packaging/${{ secrets.APP_ID }}.yml
+          repo-name: repo
+          bundle: OrbProject-${{ env.VERSION }}.flatpak
+          cache: true
+          archs: x86_64
 
-      - name: Installer createrepo-c
-        run: sudo apt update && sudo apt install -y createrepo-c
-
-      - name: Créer le dépôt YUM
-        run: |
-          set -e
-          mkdir -p yum_repo
-          cp artifacts/*.rpm yum_repo/
-          createrepo_c yum_repo/
-
-      - name: Mettre à jour le dépôt YUM
-        run: |
-          set -e
-          git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/OrbProject/OrbProject-yum.git yum_repo_git
-          cp -r yum_repo/* yum_repo_git/
-          cd yum_repo_git
-          git add .
-          git commit -m "Mise à jour du dépôt YUM pour OrbProject v${{ env.VERSION }}"
-          git push
+      # ----------------------------------------------------
+      # 9. Publication des artefacts dans la release
+      # ----------------------------------------------------
+      - name: Upload installers to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.AppImage
+            *.deb
+            *.rpm
+            *.flatpak
