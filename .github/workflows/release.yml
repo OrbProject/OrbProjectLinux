@@ -18,7 +18,7 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential unzip imagemagick libfuse2 \
               flatpak flatpak-builder \
-              ruby-dev zlib1g-dev libffi-dev icnsutils
+              ruby-dev zlib1g-dev libffi-dev
           sudo gem install --no-document fpm
 
       - name: Download Unity Linux build
@@ -34,13 +34,11 @@ jobs:
           fi
           unzip -q "$ZIP_FILE"
 
-      - name: Download & convert icon to PNG
+      - name: Download icon PNG directly
         env:
-          ICON_URL: "https://builds.orbprojectmanagement.com/Images/logo.ico"
+          ICON_URL: "https://builds.orbprojectmanagement.com/Images/Logo.png"
         run: |
-          curl -fL "$ICON_URL" -o icon.ico
-          icns2png -x -o extracted_icons icon.ico
-          cp extracted_icons/icon_512x512x32.png icon.png
+          curl -fL "$ICON_URL" -o icon.png
 
       - name: Prepare AppDir structure
         run: |
