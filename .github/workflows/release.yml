@@ -66,8 +66,7 @@ jobs:
       - name: Build AppImage
         uses: appimagecrafters/build-appimage@v1
         with:
-          appdir: AppDir
-          output: OrbProject-${{ env.VERSION }}.AppImage
+          entryPoint: AppImageBuilder.yml
 
       - name: Build .deb package
         run: |
