@@ -63,10 +63,10 @@ jobs:
           Categories=Game;
           EOF
 
-      - name: Build AppImage
-        uses: appimagecrafters/build-appimage@v1
-        with:
-          entryPoint: packaging/AppImageBuilder.yml
+      #- name: Build AppImage
+        #uses: appimagecrafters/build-appimage@v1
+       # with:
+         # entryPoint: packaging/AppImageBuilder.yml
 
       - name: Build .deb package
         run: |
