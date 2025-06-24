@@ -103,7 +103,3 @@ jobs:
           files: |
             *.deb
             *.rpm
-
-          
-            #*.AppImage
-            #*.flatpak
