@@ -9,7 +9,7 @@ AppDir:
     icon: OrbProject
     version: "$VERSION"
     exec: usr/bin/OrbProject
-    exec_args: "--no-sandbox $@"
+    exec_args: "$@"
 
   runtime:
     env:
@@ -25,6 +25,7 @@ AppDir:
       - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main universe'
         key_url: 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C'
     include:
+      - python3
       - libgtk-3-0
       - libnss3
       - libxss1
