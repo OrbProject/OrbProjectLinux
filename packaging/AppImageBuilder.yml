@@ -7,7 +7,7 @@ AppDir:
     id: com.orbproject.OrbProject
     name: OrbProject
     icon: OrbProject
-    version: "$VERSION"
+    version: ${VERSION}
     exec: usr/share/OrbProject/OrbProject.x86_64
     exec_args: "$@"
 
@@ -36,6 +36,6 @@ AppDir:
 
 AppImage:
   update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-{{ version }}-x86_64.AppImage.zsync"
-  output: OrbProject-{{ version }}-x86_64.AppImage
+  output: OrbProject-${VERSION}-x86_64.AppImage
 
 
