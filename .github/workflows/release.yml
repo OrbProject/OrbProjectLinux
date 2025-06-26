@@ -57,7 +57,8 @@ jobs:
           EOF
           chmod +x AppDir/usr/bin/OrbProject
 
-          cp icon.png AppDir/OrbProject.png
+          mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
+          cp icon.png AppDir/usr/share/icons/hicolor/512x512/apps/OrbProject.png
           cat > AppDir/OrbProject.desktop <<'EOF'
           [Desktop Entry]
           Name=OrbProject
