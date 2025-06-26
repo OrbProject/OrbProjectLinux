@@ -68,7 +68,6 @@ jobs:
         run: chmod 644 packaging/AppImageBuilder.yml
 
       - name: Build AppImage
-        update-information: none
         uses: appimagecrafters/build-appimage@v1
         with:
           recipe: packaging/AppImageBuilder.yml
