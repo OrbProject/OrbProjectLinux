@@ -8,7 +8,7 @@ AppDir:
     name: OrbProject
     icon: OrbProject
     version: "$VERSION"
-    exec: usr/bin/OrbProject
+    exec: usr/share/OrbProject/OrbProject.x86_64
     exec_args: "$@"
 
   runtime:
