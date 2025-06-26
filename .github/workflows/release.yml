@@ -64,9 +64,6 @@ jobs:
           Categories=Game;
           EOF
 
-      - name: Fix permissions on AppImageBuilder.yml
-        run: chmod 644 packaging/AppImageBuilder.yml
-
       - name: Build AppImage
         uses: appimagecrafters/build-appimage@v1
         with:
@@ -112,5 +109,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
 
-      # Remove .zsync handling (AppImageUpdate support not needed)
-      # Previously any step like "ls *.AppImage.zsync" or uploading .zsync should be removed
+      # .zsync generation and upload fully removed as not needed
