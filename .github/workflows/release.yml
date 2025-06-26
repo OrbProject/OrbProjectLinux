@@ -4,10 +4,6 @@ on:
   release:
     types: [published]
 
-    # IMPORTANT pour pouvoir attacher l'exécutable à la Release
-permissions:
-  contents: write
-
 jobs:
   build-linux:
     runs-on: ubuntu-22.04
@@ -57,8 +53,7 @@ jobs:
           EOF
           chmod +x AppDir/usr/bin/OrbProject
 
-          mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
-          cp icon.png AppDir/usr/share/icons/hicolor/512x512/apps/OrbProject.png
+          cp icon.png AppDir/OrbProject.png
           cat > AppDir/OrbProject.desktop <<'EOF'
           [Desktop Entry]
           Name=OrbProject
@@ -68,11 +63,13 @@ jobs:
           Categories=Game;
           EOF
 
+      - name: Fix permissions on AppImageBuilder.yml
+        run: chmod 644 packaging/AppImageBuilder.yml
+
       - name: Build AppImage
         uses: appimagecrafters/build-appimage@v1
         with:
           recipe: packaging/AppImageBuilder.yml
-
 
       - name: Build .deb package
         run: |
@@ -94,21 +91,25 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-      #- name: Build Flatpak bundle
-        #uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        #with:
-         # manifest-path: packaging/${{ secrets.APP_ID }}.yml
-          #repo-name: repo
-         # bundle: OrbProject-${{ env.VERSION }}.flatpak
-         # cache: true
-         # archs: x86_64
+      - name: Build Flatpak bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/${{ secrets.APP_ID }}.yml
+          repo-name: repo
+          bundle: OrbProject-${{ env.VERSION }}.flatpak
+          cache: true
+          archs: x86_64
 
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            *.AppImage
             *.deb
             *.rpm
-            *.AppImage
+            *.flatpak
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+
+      # Remove .zsync handling (AppImageUpdate support not needed)
+      # Previously any step like "ls *.AppImage.zsync" or uploading .zsync should be removed
