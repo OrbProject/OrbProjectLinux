@@ -67,6 +67,9 @@ jobs:
           Categories=Game;
           EOF
 
+      - name: Fix permissions on AppImageBuilder.yml
+        run: chmod 644 packaging/AppImageBuilder.yml
+
       - name: Build AppImage
         uses: appimagecrafters/build-appimage@v1
         with:
