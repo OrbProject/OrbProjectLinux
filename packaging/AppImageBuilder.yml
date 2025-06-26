@@ -25,7 +25,9 @@ AppDir:
       - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main universe'
         key_url: 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C'
     include:
+      - coreutils
       - python3
+      - dash
       - libgtk-3-0
       - libnss3
       - libxss1
