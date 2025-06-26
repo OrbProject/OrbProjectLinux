@@ -35,6 +35,7 @@ AppDir:
       - libxrandr2
 
 AppImage:
-  arch: x86_64
-  update-information: none
+  update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-{{ version }}-x86_64.AppImage.zsync"
+  output: OrbProject-{{ version }}-x86_64.AppImage
+
 
