@@ -31,4 +31,4 @@ AppDir:
       - libxrandr2
 
 AppImage:
-  arch: x86_64
+  arch: x86_64 
