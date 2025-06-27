@@ -82,22 +82,23 @@ jobs:
             version: "${{ env.VERSION }}"
             exec: OrbProject
             path: usr/bin
-      
+          
             runtime:
               env:
-                PATH: "\$APPDIR/usr/bin:\$PATH"
-                LD_LIBRARY_PATH: "\$APPDIR/usr/lib:\$LD_LIBRARY_PATH"
-      
+                PATH: "$APPDIR/usr/bin:$PATH"
+                LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
+          
             files:
               include: AppDir
-      
-          AppDir:
-            path: AppDir
-      
-          launcher:
-            file: OrbProject.desktop
-      
-          update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
+          
+            AppDir:
+              path: AppDir
+          
+            launcher:
+              file: OrbProject.desktop
+          
+            update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
+
           EOF
 
       - name: Debug VERSION
@@ -109,6 +110,17 @@ jobs:
       - name: Build AppImage manually
         run: |
           appimage-builder --recipe packaging/AppImageBuilder.yml
+
+      - name: Build .deb package
+        run: |
+          fpm -s dir -t deb -n OrbProject -v ${VERSION#v} \
+              --architecture amd64 \
+              --maintainer "orbProject <noreply@orbprojectmanagement.com>" \
+              --license MIT \
+              --description "Orb Project Management" \
+              --url "https://github.com/${{ github.repository }}" \
+              --depends "libgtk-3-0" --depends "libnss3" \
+              -C AppDir usr
 
       - name: Build .rpm package
         run: |
