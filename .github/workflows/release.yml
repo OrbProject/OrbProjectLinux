@@ -68,7 +68,8 @@ jobs:
         uses: appimagecrafters/build-appimage@v1
         with:
           recipe: packaging/AppImageBuilder.yml
-          version: ${VERSION}
+        env:
+          VERSION: ${{ env.VERSION }}
 
       - name: Generate .zsync file for AppImage
         run: |
