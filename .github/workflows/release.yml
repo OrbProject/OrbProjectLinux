@@ -72,7 +72,8 @@ jobs:
       - name: Create AppImageBuilder recipe
         run: |
           mkdir -p packaging
-          cat > packaging/AppImageBuilder.yml <<'EOF'
+          cat > packaging/AppImageBuilder.yml <<EOF
+          version: 1
           AppImage:
             id: orbproject
             name: OrbProject
@@ -83,8 +84,8 @@ jobs:
 
             runtime:
               env:
-                PATH: "$APPDIR/usr/bin:$PATH"
-                LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
+                PATH: "\$APPDIR/usr/bin:\$PATH"
+                LD_LIBRARY_PATH: "\$APPDIR/usr/lib:\$LD_LIBRARY_PATH"
 
             files:
               include: AppDir
