@@ -1,13 +1,22 @@
-version: 1
+AppImage:
+  id: orbproject
+  name: OrbProject
+  icon: OrbProject
+  version: "__VERSION__"
+  exec: OrbProject
+  path: usr/bin
 
-AppDir:
-  path: ./AppDir
-  app_info:
-    id: com.orbproject.OrbProject
-    name: OrbProject
-    icon: OrbProject
-    exec: usr/bin/OrbProject
-    version: __VERSION__
   runtime:
     env:
-      APPDIR_LIBRARY_PATH: '$APPDIR/usr/lib'
+      PATH: "$APPDIR/usr/bin:$PATH"
+      LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
+
+  files:
+    include: AppDir
+
+  desktop:
+    file: OrbProject.desktop
+    name: OrbProject
+
+  # Optionnel : génère aussi le .zsync
+  update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
