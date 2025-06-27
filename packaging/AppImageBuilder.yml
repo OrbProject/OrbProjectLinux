@@ -1,40 +1,13 @@
-version: 1
+version: __VERSION__
 
 AppDir:
-  path: AppDir
-
+  path: ./AppDir
   app_info:
     id: com.orbproject.OrbProject
     name: OrbProject
     icon: OrbProject
-    version: "__VERSION__"
-    exec: usr/share/OrbProject/OrbProject.x86_64
-    exec_args: "$@"
-
+    exec: usr/bin/OrbProject
+    version: __VERSION__
   runtime:
     env:
-      APPDIR_LIBRARY_PATH: "$APPDIR/usr/lib"
-
-  files:
-    include: []
-    exclude: []
-
-  apt:
-    arch: amd64
-    sources:
-      - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main universe'
-        key_url: 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C'
-    include:
-      - coreutils
-      - python3
-      - dash
-      - libgtk-3-0
-      - libnss3
-      - libxss1
-      - libasound2
-      - libxrandr2
-
-AppImage:
-  arch: x86_64
-  update-information: none
-  file_name: OrbProject-__VERSION__-x86_64.AppImage
+      APPDIR_LIBRARY_PATH: '$APPDIR/usr/lib'
