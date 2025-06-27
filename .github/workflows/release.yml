@@ -79,15 +79,15 @@ jobs:
             arch: x86_64
             update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
 
-            app_dir:
-              path: AppDir
-
+          AppDir:
             app_info:
               id: orbproject
               name: OrbProject
               icon: OrbProject
               version: "${{ env.VERSION }}"
               exec: OrbProject
+
+            path: AppDir
 
             runtime:
               env:
