@@ -79,6 +79,7 @@ jobs:
             name: OrbProject
             icon: OrbProject
             version: "${{ env.VERSION }}"
+            arch: x86_64
             exec: OrbProject
             path: usr/bin
 
