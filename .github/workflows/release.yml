@@ -71,6 +71,12 @@ jobs:
           pip install --upgrade pip
           pip install appimage-builder==0.9.1
 
+      - name: Install appimagetool
+        run: |
+          curl -Lo appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          sudo mv appimagetool /usr/local/bin/
+
       - name: Create AppImageBuilder recipe
         run: |
           mkdir -p packaging
