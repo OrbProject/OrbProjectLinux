@@ -77,7 +77,7 @@ jobs:
             id: orbproject
             name: OrbProject
             icon: OrbProject
-            version: "__VERSION__"
+            version: "${{ env.VERSION }}"
             exec: OrbProject
             path: usr/bin
 
@@ -104,7 +104,6 @@ jobs:
 
       - name: Build AppImage manually
         run: |
-          sed -i "s/__VERSION__/${VERSION}/g" packaging/AppImageBuilder.yml
           appimage-builder --recipe packaging/AppImageBuilder.yml
 
       - name: Build .rpm package
