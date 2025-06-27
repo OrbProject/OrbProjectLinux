@@ -96,6 +96,12 @@ jobs:
             update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
           EOF
 
+      - name: Debug VERSION
+        run: echo "VERSION=${VERSION}"
+
+      - name: Show final AppImageBuilder.yml
+        run: cat packaging/AppImageBuilder.yml
+
       - name: Build AppImage manually
         run: |
           sed -i "s/__VERSION__/${VERSION}/g" packaging/AppImageBuilder.yml
