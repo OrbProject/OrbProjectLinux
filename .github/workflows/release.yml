@@ -134,14 +134,14 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-      - name: Build Flatpak bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          manifest-path: packaging/${{ secrets.APP_ID }}.yml
-          repo-name: repo
-          bundle: OrbProject-${{ env.VERSION }}.flatpak
-          cache: true
-          archs: x86_64
+      #- name: Build Flatpak bundle
+        #uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        #with:
+          #manifest-path: packaging/${{ secrets.APP_ID }}.yml
+          #repo-name: repo
+          #bundle: OrbProject-${{ env.VERSION }}.flatpak
+          #cache: true
+          #archs: x86_64
 
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
