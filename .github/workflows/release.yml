@@ -88,7 +88,7 @@ jobs:
               name: OrbProject
               icon: OrbProject
               version: "${{ env.VERSION }}"
-              exec: OrbProject
+              exec: usr/bin/OrbProject
             runtime:
               env:
                 PATH: "$APPDIR/usr/bin:$PATH"
