@@ -75,28 +75,33 @@ jobs:
           cat > packaging/AppImageBuilder.yml <<EOF
           version: 1
           AppImage:
+            arch: x86_64
             id: orbproject
             name: OrbProject
             icon: OrbProject
             version: "${{ env.VERSION }}"
-            arch: x86_64
             exec: OrbProject
             path: usr/bin
-
+          
             runtime:
               env:
                 PATH: "\$APPDIR/usr/bin:\$PATH"
                 LD_LIBRARY_PATH: "\$APPDIR/usr/lib:\$LD_LIBRARY_PATH"
-
+          
             files:
               include: AppDir
-
-            desktop:
+          
+            app_dir:
+              path: AppDir
+          
+            launcher:
               file: OrbProject.desktop
-              name: OrbProject
-
-            update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
+          
+            update:
+              zsync:
+                url: "https://github.com/OrbProjectManagement/OrbProject/releases/latest/download/OrbProject-*.AppImage.zsync"
           EOF
+
 
       - name: Debug VERSION
         run: echo "VERSION=${VERSION}"
