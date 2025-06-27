@@ -151,6 +151,5 @@ jobs:
             *.AppImage.zsync
             *.deb
             *.rpm
-            *.flatpak
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
