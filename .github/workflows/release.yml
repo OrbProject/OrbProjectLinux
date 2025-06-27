@@ -1,40 +1,112 @@
-version: 1
+name: Release Linux Installers
 
-AppDir:
-  path: AppDir
+on:
+  release:
+    types: [published]
 
-  app_info:
-    id: com.orbproject.OrbProject
-    name: OrbProject
-    icon: OrbProject
-    version: "__VERSION__"
-    exec: usr/share/OrbProject/OrbProject.x86_64
-    exec_args: "$@"
-
-  runtime:
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
     env:
-      APPDIR_LIBRARY_PATH: "$APPDIR/usr/lib"
+      VERSION: ${{ github.event.release.tag_name }}
 
-  files:
-    include: []
-    exclude: []
+    steps:
+      - uses: actions/checkout@v4
 
-  apt:
-    arch: amd64
-    sources:
-      - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main universe'
-        key_url: 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x871920D1991BC93C'
-    include:
-      - coreutils
-      - python3
-      - dash
-      - libgtk-3-0
-      - libnss3
-      - libxss1
-      - libasound2
-      - libxrandr2
+      - name: Install packaging dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential unzip imagemagick libfuse2 \
+              flatpak flatpak-builder \
+              ruby-dev zlib1g-dev libffi-dev zsync
+          sudo gem install --no-document fpm
 
-AppImage:
-  arch: x86_64
-  update-information: none
-  file_name: OrbProject-__VERSION__-x86_64.AppImage
+      - name: Download Unity Linux build
+        env:
+          BUILD_URL: "https://builds.orbprojectmanagement.com/Linux/Build_Linux.zip"
+          ZIP_FILE: Build_Linux.zip
+        run: |
+          echo "Fetching $ZIP_FILE from $BUILD_URL"
+          curl -fL "$BUILD_URL" -o "$ZIP_FILE"
+          if [ $(stat --printf="%s" "$ZIP_FILE") -lt 1048576 ]; then
+            echo "::error::Downloaded ZIP is too small to be valid." >&2
+            exit 1
+          fi
+          unzip -q "$ZIP_FILE"
+
+      - name: Download icon PNG directly
+        env:
+          ICON_URL: "https://builds.orbprojectmanagement.com/Images/Logo.png"
+        run: |
+          curl -fL "$ICON_URL" -o icon.png
+
+      - name: Prepare AppDir structure
+        run: |
+          mkdir -p AppDir/usr/share/OrbProject
+          cp -r Build_Linux/* AppDir/usr/share/OrbProject/
+
+          mkdir -p AppDir/usr/bin
+          cat > AppDir/usr/bin/OrbProject <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname \"$(readlink -f \"$0\")")"
+          exec "$HERE/../share/OrbProject/OrbProject.x86_64" "$@"
+          EOF
+          chmod +x AppDir/usr/bin/OrbProject
+
+          mkdir -p AppDir/usr/share/icons/hicolor/512x512/apps
+          cp icon.png AppDir/usr/share/icons/hicolor/512x512/apps/OrbProject.png
+          cat > AppDir/OrbProject.desktop <<'EOF'
+          [Desktop Entry]
+          Name=OrbProject
+          Exec=OrbProject
+          Icon=OrbProject
+          Type=Application
+          Categories=Game;
+          EOF
+
+      - name: Install AppImageBuilder
+        run: |
+          curl -fL -o appimage-builder.AppImage https://github.com/AppImageCrafters/appimage-builder/releases/download/0.9.1/appimage-builder-0.9.1-x86_64.AppImage
+          chmod +x appimage-builder.AppImage
+          ./appimage-builder.AppImage --appimage-extract
+          sudo ./squashfs-root/AppRun --version
+
+      
+      - name: Build AppImage manually
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          sed -i "s/__VERSION__/${VERSION}/g" packaging/AppImageBuilder.yml
+          ./squashfs-root/AppRun --recipe packaging/AppImageBuilder.yml
+      
+      
+      - name: Build .rpm package
+        run: |
+          fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
+              --architecture x86_64 \
+              --license MIT \
+              --url "https://github.com/${{ github.repository }}" \
+              --depends "gtk3" \
+              -C AppDir usr
+
+      - name: Build Flatpak bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: packaging/${{ secrets.APP_ID }}.yml
+          repo-name: repo
+          bundle: OrbProject-${{ env.VERSION }}.flatpak
+          cache: true
+          archs: x86_64
+
+      - name: Upload installers to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.AppImage
+            *.AppImage.zsync
+            *.deb
+            *.rpm
+            *.flatpak
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+
+      # .zsync generation now included with zsyncmake
