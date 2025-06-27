@@ -66,10 +66,11 @@ jobs:
 
       - name: Install AppImageBuilder
         run: |
-          curl -LO https://github.com/AppImageCrafters/appimage-builder/releases/latest/download/appimage-builder-x86_64.AppImage
-          chmod +x appimage-builder-x86_64.AppImage
-          ./appimage-builder-x86_64.AppImage --appimage-extract
+          curl -fL -o appimage-builder.AppImage https://github.com/AppImageCrafters/appimage-builder/releases/download/0.9.1/appimage-builder-0.9.1-x86_64.AppImage
+          chmod +x appimage-builder.AppImage
+          ./appimage-builder.AppImage --appimage-extract
           sudo ./squashfs-root/AppRun --version
+
       
       - name: Build AppImage manually
         run: |
