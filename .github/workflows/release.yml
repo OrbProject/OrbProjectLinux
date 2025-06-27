@@ -80,26 +80,22 @@ jobs:
             update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
 
           AppDir:
+            path: AppDir
             app_info:
               id: orbproject
               name: OrbProject
               icon: OrbProject
               version: "${{ env.VERSION }}"
               exec: OrbProject
-
-            path: AppDir
-
             runtime:
               env:
                 PATH: "$APPDIR/usr/bin:$PATH"
                 LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
-
             files:
               include:
-                - AppDir
-
-            launcher:
-              file: OrbProject.desktop
+                - usr
+            desktop_files:
+              - OrbProject.desktop
           EOF
 
       - name: Debug VERSION
