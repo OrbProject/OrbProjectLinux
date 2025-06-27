@@ -3,7 +3,10 @@ name: Release Linux Installers
 on:
   release:
     types: [published]
-
+    
+permissions:
+  contents: write
+  
 jobs:
   build-linux:
     runs-on: ubuntu-22.04
