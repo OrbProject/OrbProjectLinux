@@ -74,31 +74,31 @@ jobs:
           mkdir -p packaging
           cat > packaging/AppImageBuilder.yml <<EOF
           version: 1
+
           AppImage:
             arch: x86_64
-            id: orbproject
-            name: OrbProject
-            icon: OrbProject
-            version: "${{ env.VERSION }}"
-            exec: OrbProject
-            path: usr/bin
-          
+            update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
+
+          AppDir:
+            app_info:
+              id: orbproject
+              name: OrbProject
+              icon: OrbProject
+              version: "${{ env.VERSION }}"
+              exec: OrbProject
+
+            path: AppDir
+
             runtime:
               env:
                 PATH: "$APPDIR/usr/bin:$PATH"
                 LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
-          
+
             files:
               include: AppDir
-          
-            AppDir:
-              path: AppDir
-          
+
             launcher:
               file: OrbProject.desktop
-          
-            update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
-
           EOF
 
       - name: Debug VERSION
