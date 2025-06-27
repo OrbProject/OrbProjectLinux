@@ -64,19 +64,17 @@ jobs:
           Categories=Game;
           EOF
 
-      - name: Install AppImageBuilder
+      - name: Install AppImageBuilder with pip
         run: |
-          curl -fL -o appimage-builder.AppImage https://github.com/AppImageCrafters/appimage-builder/releases/download/0.9.1/appimage-builder-0.9.1-x86_64.AppImage
-          chmod +x appimage-builder.AppImage
-          ./appimage-builder.AppImage --appimage-extract
-          sudo ./squashfs-root/AppRun --version
+          pip install --upgrade pip
+          pip install appimage-builder==0.9.1
 
       
       - name: Build AppImage manually
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           sed -i "s/__VERSION__/${VERSION}/g" packaging/AppImageBuilder.yml
-          ./squashfs-root/AppRun --recipe packaging/AppImageBuilder.yml
+          appimage-builder --recipe packaging/AppImageBuilder.yml
       
       
       - name: Build .rpm package
