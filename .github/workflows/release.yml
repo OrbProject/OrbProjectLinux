@@ -69,14 +69,39 @@ jobs:
           pip install --upgrade pip
           pip install appimage-builder==0.9.1
 
-      
+      - name: Create AppImageBuilder recipe
+        run: |
+          mkdir -p packaging
+          cat > packaging/AppImageBuilder.yml <<'EOF'
+          AppImage:
+            id: orbproject
+            name: OrbProject
+            icon: OrbProject
+            version: "__VERSION__"
+            exec: OrbProject
+            path: usr/bin
+
+            runtime:
+              env:
+                PATH: "$APPDIR/usr/bin:$PATH"
+                LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
+
+            files:
+              include: AppDir
+
+            desktop:
+              file: OrbProject.desktop
+              name: OrbProject
+
+            update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
+          EOF
+
       - name: Build AppImage manually
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           sed -i "s/__VERSION__/${VERSION}/g" packaging/AppImageBuilder.yml
           appimage-builder --recipe packaging/AppImageBuilder.yml
-      
-      
+
       - name: Build .rpm package
         run: |
           fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
