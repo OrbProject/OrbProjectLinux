@@ -64,37 +64,26 @@ jobs:
           Categories=Game;
           EOF
 
-      - name: Build AppImage
-        uses: appimagecrafters/build-appimage@v1
-        with:
-          recipe: packaging/AppImageBuilder.yml
-        env:
-          VERSION: ${{ env.VERSION }}
-
-      - name: Generate .zsync file for AppImage
+      - name: Install AppImageBuilder
         run: |
-          APPIMAGE_FILE=$(ls *.AppImage | head -n 1)
-          zsyncmake "$APPIMAGE_FILE"
-
-      - name: Build .deb package
+          curl -LO https://github.com/AppImageCrafters/appimage-builder/releases/latest/download/appimage-builder-x86_64.AppImage
+          chmod +x appimage-builder-x86_64.AppImage
+          ./appimage-builder-x86_64.AppImage --appimage-extract
+          sudo ./squashfs-root/AppRun --version
+      
+      - name: Build AppImage manually
         run: |
-          fpm -s dir -t deb -n OrbProject -v ${VERSION#v} \
-              --architecture amd64 \
-              --maintainer "orbProject <noreply@orbprojectmanagement.com>" \
-              --license MIT \
-              --description "Orb Project Management" \
-              --url "https://github.com/${{ github.repository }}" \
-              --depends "libgtk-3-0" --depends "libnss3" \
-              -C AppDir usr
-
-      - name: Build .rpm package
-        run: |
-          fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
-              --architecture x86_64 \
-              --license MIT \
-              --url "https://github.com/${{ github.repository }}" \
-              --depends "gtk3" \
-              -C AppDir usr
+          VERSION=${{ env.VERSION }} ./squashfs-root/AppRun --recipe packaging/AppImageBuilder.yml
+      
+      
+            - name: Build .rpm package
+              run: |
+                fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
+                    --architecture x86_64 \
+                    --license MIT \
+                    --url "https://github.com/${{ github.repository }}" \
+                    --depends "gtk3" \
+                    -C AppDir usr
 
       - name: Build Flatpak bundle
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
