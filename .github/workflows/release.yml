@@ -95,7 +95,8 @@ jobs:
                 LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
 
             files:
-              include: AppDir
+              include:
+                - AppDir
 
             launcher:
               file: OrbProject.desktop
