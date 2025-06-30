@@ -137,9 +137,9 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-      - name: Add Flathub remote (user mode)
+      - name: Add Flathub remote
         run: |
-          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Flatpak bundle
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
@@ -152,6 +152,7 @@ jobs:
           branch: master
           upload-artifact: true
           restore-cache: true
+          user: true
         env:
           VERSION: ${{ env.VERSION }}
             
