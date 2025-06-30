@@ -152,8 +152,8 @@ jobs:
           branch: master
           upload-artifact: true
           restore-cache: true
-          env:
-            VERSION: ${{ env.VERSION }}
+        env:
+          VERSION: ${{ env.VERSION }}
             
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
