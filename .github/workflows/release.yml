@@ -152,9 +152,9 @@ jobs:
           branch: master
           upload-artifact: true
           restore-cache: true
-          extra-args: --user
         env:
           VERSION: ${{ env.VERSION }}
+          FLATPAK_BUILDER_ARGS: --user
             
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
