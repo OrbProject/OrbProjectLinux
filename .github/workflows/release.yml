@@ -3,10 +3,10 @@ name: Release Linux Installers
 on:
   release:
     types: [published]
-    
+
 permissions:
   contents: write
-  
+
 jobs:
   build-linux:
     runs-on: ubuntu-22.04
@@ -120,7 +120,7 @@ jobs:
       - name: Build .deb package
         run: |
           fpm -s dir -t deb -n OrbProject -v ${VERSION#v} \
-              --architecture amd64 \
+              --architecture x86_64 \
               --maintainer "orbProject <noreply@orbprojectmanagement.com>" \
               --license MIT \
               --description "Orb Project Management" \
@@ -136,6 +136,10 @@ jobs:
               --url "https://github.com/${{ github.repository }}" \
               --depends "gtk3" \
               -C AppDir usr
+
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Flatpak bundle
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
@@ -154,5 +158,6 @@ jobs:
             *.AppImage.zsync
             *.deb
             *.rpm
+            *.flatpak
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
