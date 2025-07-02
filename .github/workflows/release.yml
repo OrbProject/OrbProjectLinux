@@ -137,6 +137,10 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
       - name: Build Flatpak bundle
         run: |
           flatpak-builder --user --force-clean --repo=repo --install-deps-from=flathub \
