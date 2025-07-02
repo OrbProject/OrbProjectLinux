@@ -137,21 +137,14 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-      - name: Add Flathub remote (user mode)
-        run: |
-          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
       - name: Build Flatpak bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          manifest-path: packaging/com.orbprojectmanagement.OrbProject.yml
-          bundle: OrbProject-${{ env.VERSION }}.flatpak
-          arch: x86_64
-          cache: true
-          build-bundle: true
-          branch: master
-          upload-artifact: true
-          restore-cache: true
+        run: |
+          flatpak-builder --user --force-clean --repo=repo --install-deps-from=flathub \
+            --default-branch=master --arch=x86_64 \
+            packaging/build-dir packaging/com.orbprojectmanagement.OrbProject.yml
+
+          flatpak build-bundle repo OrbProject-${{ env.VERSION }}.flatpak \
+            com.orbprojectmanagement.OrbProject master --arch=x86_64
         env:
           VERSION: ${{ env.VERSION }}
 
