@@ -142,6 +142,9 @@ jobs:
           mkdir -p packaging/build-dir
           cp icon.png packaging/build-dir/
 
+      - name: Debug Flatpak build dir
+        run: ls -l packaging/build-dir
+
       - name: Add Flathub remote
         run: |
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
