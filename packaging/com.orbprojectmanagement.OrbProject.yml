@@ -33,7 +33,7 @@ modules:
       - type: dir
         path: ../Build_Linux
       - type: file
-        path: packaging/build-dir/icon.png
+        path: build-dir/icon.png
     build-commands:
       # Crée l’arborescence finale dans /app
       - install -D -m755 OrbProject.x86_64 /app/bin/OrbProject
