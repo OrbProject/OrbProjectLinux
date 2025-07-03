@@ -44,7 +44,7 @@ modules:
       - ls -l
       - file icon.png
       # Icône (512×512) récupérée plus tôt par GitHub Actions
-      - install -D -m644 icon.png \
+      - install -D -m644 Logo.png \
           /app/share/icons/hicolor/512x512/apps/com.orbprojectmanagement.OrbProject.png
       # Fichier .desktop généré à l’intérieur du conteneur
       - install -d /app/share/applications
