@@ -32,8 +32,7 @@ modules:
       # Dossier local contenant l’exécutable Unity, ses Data et libs
       - type: dir
         path: ../Build_Linux
-      - type: file
-        path: build-dir/icon.png
+        
     build-commands:
       # Crée l’arborescence finale dans /app
       - install -D -m755 OrbProject.x86_64 /app/bin/OrbProject
@@ -42,7 +41,7 @@ modules:
       - ls -l
       - file icon.png
       # Icône (512×512) récupérée plus tôt par GitHub Actions
-      - install -D -m644 icon.png \
+      - install -D -m644 build-dir/icon.png \
           /app/share/icons/hicolor/512x512/apps/com.orbprojectmanagement.OrbProject.png
       # Fichier .desktop généré à l’intérieur du conteneur
       - install -d /app/share/applications
