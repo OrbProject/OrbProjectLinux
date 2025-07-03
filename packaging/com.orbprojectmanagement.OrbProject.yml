@@ -33,8 +33,9 @@ modules:
       - type: dir
         path: ../Build_Linux
       - type: file
-        path: icon.png
         url: https://builds.orbprojectmanagement.com/Images/Logo.png
+        path: icon.png
+        sha256: 6E5918A7438BFBBC99FAE94FC535A67B5387844005C7ADDD5D6CB9853DB00DE6
     build-commands:
       # Crée l’arborescence finale dans /app
       - install -D -m755 OrbProject.x86_64 /app/bin/OrbProject
