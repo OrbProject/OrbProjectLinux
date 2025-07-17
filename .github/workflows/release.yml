@@ -47,12 +47,12 @@ jobs:
         run: |
           mkdir -p AppDir/usr/share/OrbProject
           cp -r Build_Linux/* AppDir/usr/share/OrbProject/
-
+      
           mkdir -p AppDir/usr/bin
-          cat > AppDir/usr/bin/OrbProject <<'EOF'
+          cat > AppDir/usr/bin/OrbProject <<EOF
           #!/bin/sh
-          HERE="$(dirname \"$(readlink -f \"$0\")")"
-          exec "$HERE/../share/OrbProject/OrbProject.x86_64" "$@"
+          HERE="\$(dirname "\$(readlink -f "\$0")")"
+          exec "\$HERE/../share/OrbProject/OrbProject.x86_64" "\$@"
           EOF
           chmod +x AppDir/usr/bin/OrbProject
 
