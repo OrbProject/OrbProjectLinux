@@ -157,7 +157,7 @@ jobs:
           cd apt-repo
           git add .
           git commit -m "Publier OrbProject ${{ env.VERSION }}" || echo "Pas de changement à commit"
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git" HEAD:main
+          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/OrbProject/orbproject-apt.git" HEAD:main
 
 
       - name: Build .rpm package
