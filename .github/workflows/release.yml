@@ -164,13 +164,18 @@ jobs:
 
           mkdir -p apt-repo/dists/stable/main/binary-amd64
 
+          # Créer un index temporaire avec le vrai fichier
           mkdir temp-deb-dir
           cp "$DEB_FILE" temp-deb-dir/
           dpkg-scanpackages temp-deb-dir /dev/null > Packages
 
-          sed -i "s|^Filename:.*|Filename: $DEB_NAME\\nURI: $BASE_URL|g" Packages
+          # Remplacer le champ Filename par l’URL GitHub directe
+          sed -i "s|^Filename:.*|Filename: $BASE_URL|g" Packages
+
+          # Compresser et déplacer l’index
           gzip -9 < Packages > apt-repo/dists/stable/main/binary-amd64/Packages.gz
 
+          # Nettoyage
           rm -rf temp-deb-dir Packages
 
       - name: Commit & Push vers GitHub Pages (APT)
