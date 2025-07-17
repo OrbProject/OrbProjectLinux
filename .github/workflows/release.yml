@@ -148,40 +148,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
 
-      - name: Cloner le dépôt APT GitHub Pages avec token personnel
+      - name: Déclencher mise à jour APT dans orbproject-apt
         run: |
-          git clone --depth 1 "https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git" apt-repo
-          cd apt-repo
-          git config user.name "hugo2805"
-          git config user.email "eitelhugo10@gmail.com"
+          curl -X POST https://api.github.com/repos/OrbProject/orbproject-apt/dispatches \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GH_RELEASE_TOKEN }}" \
+            -d '{"event_type": "update_apt_repo", "client_payload": { "version": "${{ env.VERSION }}" }}'
 
-      - name: Générer index APT avec URL GitHub Release
-        run: |
-          VERSION=${{ env.VERSION }}
-          DEB_FILE=$(ls *.deb)
-          DEB_NAME=$(basename "$DEB_FILE")
-          BASE_URL="https://github.com/${{ github.repository }}/releases/download/${VERSION}/$DEB_NAME"
-
-          mkdir -p apt-repo/dists/stable/main/binary-amd64
-
-          # Créer un index temporaire avec le vrai fichier
-          mkdir temp-deb-dir
-          cp "$DEB_FILE" temp-deb-dir/
-          dpkg-scanpackages temp-deb-dir /dev/null > Packages
-
-          # Remplacer le champ Filename par l’URL GitHub directe
-          sed -i "s|^Filename:.*|Filename: $BASE_URL|g" Packages
-
-          # Compresser et déplacer l’index
-          gzip -9 < Packages > apt-repo/dists/stable/main/binary-amd64/Packages.gz
-
-          # Nettoyage
-          rm -rf temp-deb-dir Packages
-
-      - name: Commit & Push vers GitHub Pages (APT)
-        run: |
-          cd apt-repo
-          git add .
-          git commit -m "Publier OrbProject ${{ env.VERSION }}" || echo "Pas de changement à commit"
-          git push "https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/OrbProject/orbproject-apt.git" HEAD:main
 
