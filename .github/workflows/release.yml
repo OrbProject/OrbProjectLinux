@@ -131,12 +131,9 @@ jobs:
       - name: Installer dpkg-dev
         run: sudo apt-get install -y dpkg-dev
 
-      - name: Installer dpkg-dev
-        run: sudo apt-get install -y dpkg-dev
-
       - name: Cloner le dépôt APT GitHub Pages
         run: |
-          git clone --depth 1 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git apt-repo
+          git clone --depth 1 https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git apt-repo
           cd apt-repo
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
@@ -157,7 +154,7 @@ jobs:
           cd apt-repo
           git add .
           git commit -m "Publier OrbProject ${{ env.VERSION }}" || echo "Pas de changement à commit"
-          git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/OrbProject/orbproject-apt.git" HEAD:main
+          git push "https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git" HEAD:main
 
 
       - name: Build .rpm package
