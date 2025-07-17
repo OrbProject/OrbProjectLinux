@@ -137,8 +137,6 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-     
-
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -150,6 +148,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
 
+      - name: Cloner le dépôt APT GitHub Pages avec token personnel
+        run: |
+          git clone --depth 1 "https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git" apt-repo
+          cd apt-repo
+          git config user.name "hugo2805"
+          git config user.email "eitelhugo10@gmail.com"
+
       - name: Générer index APT avec URL GitHub Release
         run: |
           VERSION=${{ env.VERSION }}
@@ -159,21 +164,14 @@ jobs:
 
           mkdir -p apt-repo/dists/stable/main/binary-amd64
 
-          # Créer un index temporaire avec le vrai fichier
           mkdir temp-deb-dir
           cp "$DEB_FILE" temp-deb-dir/
           dpkg-scanpackages temp-deb-dir /dev/null > Packages
 
-          # Remplacer Filename par URL vers GitHub Release
           sed -i "s|^Filename:.*|Filename: $BASE_URL|g" Packages
           gzip -9 < Packages > apt-repo/dists/stable/main/binary-amd64/Packages.gz
 
           rm -rf temp-deb-dir Packages
-
-      - name: Configurer Git pour les commits
-        run: |
-          git config user.name "hugo2805"
-          git config user.email "eitelhugo10@gmail.com"
 
       - name: Commit & Push vers GitHub Pages (APT)
         run: |
