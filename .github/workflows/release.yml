@@ -168,7 +168,7 @@ jobs:
           cp "$DEB_FILE" temp-deb-dir/
           dpkg-scanpackages temp-deb-dir /dev/null > Packages
 
-          sed -i "s|^Filename:.*|Filename: $BASE_URL|g" Packages
+          sed -i "s|^Filename:.*|Filename: $DEB_NAME\\nURI: $BASE_URL|g" Packages
           gzip -9 < Packages > apt-repo/dists/stable/main/binary-amd64/Packages.gz
 
           rm -rf temp-deb-dir Packages
