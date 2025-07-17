@@ -128,6 +128,37 @@ jobs:
               --depends "libgtk-3-0" --depends "libnss3" \
               -C AppDir usr
 
+      - name: Installer dpkg-dev
+        run: sudo apt-get install -y dpkg-dev
+
+      - name: Cloner le dépôt APT GitHub Pages
+        run: |
+          git clone --depth 1 https://github.com/${{ github.repository_owner }}/orbproject-apt.git apt-repo
+          cd apt-repo
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Copier le fichier .deb et régénérer Packages.gz
+        run: |
+          set -e
+
+          DEB_FILE=$(ls *.deb)
+          VERSION=${{ env.VERSION }}
+          
+          mkdir -p apt-repo/pool
+          cp "$DEB_FILE" apt-repo/pool/
+
+          mkdir -p apt-repo/dists/stable/main/binary-amd64
+          dpkg-scanpackages apt-repo/pool /dev/null | gzip -9 > apt-repo/dists/stable/main/binary-amd64/Packages.gz
+
+      - name: Pousser vers GitHub Pages
+        run: |
+          cd apt-repo
+          git add .
+          git commit -m "Publier OrbProject ${{ env.VERSION }}"
+          git push https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git main
+
+
       - name: Build .rpm package
         run: |
           fpm -s dir -t rpm -n OrbProject -v ${VERSION#v} \
@@ -137,28 +168,7 @@ jobs:
               --depends "gtk3" \
               -C AppDir usr
 
-      - name: Préparer icône pour Flatpak
-        run: |
-          mkdir -p packaging/build-dir
-          cp icon.png packaging/build-dir/
-
-      - name: Debug Flatpak build dir
-        run: ls -l packaging/build-dir
-
-      - name: Add Flathub remote
-        run: |
-          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-      - name: Build Flatpak bundle
-        run: |
-          flatpak-builder --user --force-clean --repo=repo --install-deps-from=flathub \
-            --default-branch=master --arch=x86_64 \
-            packaging/build-dir packaging/com.orbprojectmanagement.OrbProject.yml
-
-          flatpak build-bundle repo OrbProject-${{ env.VERSION }}.flatpak \
-            com.orbprojectmanagement.OrbProject master --arch=x86_64
-        env:
-          VERSION: ${{ env.VERSION }}
+     
 
       - name: Upload installers to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -168,6 +178,5 @@ jobs:
             *.AppImage.zsync
             *.deb
             *.rpm
-            *.flatpak
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
