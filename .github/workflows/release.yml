@@ -133,30 +133,29 @@ jobs:
 
       - name: Cloner le dépôt APT GitHub Pages
         run: |
-          git clone --depth 1 https://github.com/${{ github.repository_owner }}/orbproject-apt.git apt-repo
+          git clone --depth 1 https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git apt-repo
           cd apt-repo
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
 
-      - name: Copier le fichier .deb et régénérer Packages.gz
+      - name: Copier le .deb et régénérer l’index APT
         run: |
-          set -e
-
-          DEB_FILE=$(ls *.deb)
           VERSION=${{ env.VERSION }}
-          
+          DEB_FILE=$(ls *.deb)
+
           mkdir -p apt-repo/pool
           cp "$DEB_FILE" apt-repo/pool/
 
           mkdir -p apt-repo/dists/stable/main/binary-amd64
           dpkg-scanpackages apt-repo/pool /dev/null | gzip -9 > apt-repo/dists/stable/main/binary-amd64/Packages.gz
 
-      - name: Pousser vers GitHub Pages
+      - name: Commit & Push vers GitHub Pages
         run: |
           cd apt-repo
           git add .
-          git commit -m "Publier OrbProject ${{ env.VERSION }}"
-          git push https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git HEAD:main
+          git commit -m "Publier OrbProject ${{ env.VERSION }}" || echo "Rien à commit"
+          git push "https://x-access-token:${{ secrets.GH_RELEASE_TOKEN }}@github.com/${{ github.repository_owner }}/orbproject-apt.git" HEAD:main
+
 
       - name: Build .rpm package
         run: |
