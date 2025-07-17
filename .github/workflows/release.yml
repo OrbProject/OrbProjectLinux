@@ -170,6 +170,11 @@ jobs:
 
           rm -rf temp-deb-dir Packages
 
+      - name: Configurer Git pour les commits
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
       - name: Commit & Push vers GitHub Pages (APT)
         run: |
           cd apt-repo
