@@ -12,10 +12,16 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       VERSION: ${{ github.event.release.tag_name }}
-      VERSION_STRIPPED: ${{ github.event.release.tag_name.replace('v', '') }}
-
+      
     steps:
       - uses: actions/checkout@v4
+
+      - name: Extraire la version sans le "v"
+        id: extract_version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION_STRIPPED="${VERSION#v}"
+          echo "VERSION=$VERSION_STRIPPED" >> $GITHUB_ENV
 
       - name: Install packaging dependencies
         run: |
