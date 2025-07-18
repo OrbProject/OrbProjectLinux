@@ -19,7 +19,6 @@ jobs:
       - name: Extraire la version sans le "v"
         id: extract_version
         run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
           VERSION_STRIPPED="${VERSION#v}"
           echo "VERSION=$VERSION_STRIPPED" >> $GITHUB_ENV
 
