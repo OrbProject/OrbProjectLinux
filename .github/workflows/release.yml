@@ -16,11 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extraire la version sans le "v"
-        id: extract_version
-        run: |
-          VERSION_STRIPPED="${VERSION#v}"
-          echo "VERSION=$VERSION_STRIPPED" >> $GITHUB_ENV
+      - name: Get version without 'v'
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
       - name: Install packaging dependencies
         run: |
@@ -159,6 +157,6 @@ jobs:
           curl -X POST https://api.github.com/repos/OrbProject/orbproject-apt/dispatches \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: token ${{ secrets.GH_RELEASE_TOKEN }}" \
-            -d '{"event_type": "update_apt_repo", "client_payload": { "version": "${{ env.VERSION_STRIPPED }}" }}'
+            -d '{"event_type": "update_apt_repo", "client_payload": { "version": "'"${{ env.VERSION }}"'" }}'
 
 
