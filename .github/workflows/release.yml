@@ -75,53 +75,53 @@ jobs:
           Categories=Game;
           EOF
 
-      - name: Install AppImageBuilder with pip
-        run: |
-          pip install --upgrade pip
-          pip install appimage-builder==0.9.1
+      #- name: Install AppImageBuilder with pip
+        #run: |
+          #pip install --upgrade pip
+          #pip install appimage-builder==0.9.1
 
-      - name: Install appimagetool
-        run: |
-          curl -Lo appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-          chmod +x appimagetool
-          sudo mv appimagetool /usr/local/bin/
+      #- name: Install appimagetool
+        #run: |
+          #curl -Lo appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          #chmod +x appimagetool
+          #sudo mv appimagetool /usr/local/bin/
 
-      - name: Create AppImageBuilder recipe
-        run: |
-          mkdir -p packaging
-          cat > packaging/AppImageBuilder.yml <<EOF
-          version: 1
+      #- name: Create AppImageBuilder recipe
+        #run: |
+          #mkdir -p packaging
+          #cat > packaging/AppImageBuilder.yml <<EOF
+          #version: 1
 
-          AppImage:
-            arch: x86_64
-            update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
+          #AppImage:
+            #arch: x86_64
+            #update-information: "gh-releases-zsync|OrbProjectManagement|OrbProject|latest|OrbProject-*.AppImage.zsync"
 
-          AppDir:
-            path: AppDir
-            app_info:
-              id: orbproject
-              name: OrbProject
-              icon: OrbProject
-              version: "${{ env.VERSION }}"
-              exec: usr/share/OrbProject/OrbProject.x86_64
-            runtime:
-              env:
-                PATH: "$APPDIR/usr/bin:$PATH"
-                LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
-            files:
-              include:
-                - usr
-          EOF
+          #AppDir:
+            #path: AppDir
+            #app_info:
+              #id: orbproject
+              #name: OrbProject
+              #icon: OrbProject
+              #version: "${{ env.VERSION }}"
+              #exec: usr/share/OrbProject/OrbProject.x86_64
+            #runtime:
+              #env:
+                #PATH: "$APPDIR/usr/bin:$PATH"
+                #LD_LIBRARY_PATH: "$APPDIR/usr/lib:$LD_LIBRARY_PATH"
+             #files:
+              #include:
+               # - usr
+          #EOF
 
       - name: Debug VERSION
         run: echo "VERSION=${VERSION}"
 
-      - name: Show final AppImageBuilder.yml
-        run: cat packaging/AppImageBuilder.yml
+      #- name: Show final AppImageBuilder.yml
+        #run: cat packaging/AppImageBuilder.yml
 
-      - name: Build AppImage manually
-        run: |
-          appimage-builder --recipe packaging/AppImageBuilder.yml
+      #- name: Build AppImage manually
+        #run: |
+          #appimage-builder --recipe packaging/AppImageBuilder.yml
 
       - name: Build .deb package
         run: |
