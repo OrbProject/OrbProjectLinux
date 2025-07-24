@@ -155,7 +155,7 @@ jobs:
       - name: Déclencher mise à jour APT dans apt-repo
         run: |
           curl -X POST https://apt.orbprojectmanagement.com/update.php \
-               -d "version=${GITHUB_REF#refs/tags/v}" \
+               -d "version=${VERSION}" \
                -d "token=${{ secrets.VPS_DEPLOY_TOKEN }}"
 
 
