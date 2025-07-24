@@ -156,6 +156,4 @@ jobs:
         run: |
           curl -X POST https://apt.orbprojectmanagement.com/update.php \
                -d "version=${VERSION}" \
-               -d "token=mN@bmPDjRLTBHpbMoYY&RcptKnP9@NbECabqXafn"
-
-
+               -d "token=${{ secrets.VPS_DEPLOY_TOKEN }}"
