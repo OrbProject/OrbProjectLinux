@@ -152,11 +152,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
 
-      - name: Déclencher mise à jour APT dans orbproject-apt
+      - name: Déclencher mise à jour APT dans apt-repo
         run: |
-          curl -X POST https://api.github.com/repos/OrbProject/orbproject-apt/dispatches \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token ${{ secrets.GH_RELEASE_TOKEN }}" \
-            -d '{"event_type": "update_apt_repo", "client_payload": { "version": "'"${{ env.VERSION }}"'" }}'
+          curl -X POST https://apt.orbprojectmanagement.com/update.php \
+               -d "version=${GITHUB_REF#refs/tags/v}" \
+               -d "token=${{ secrets.VPS_DEPLOY_TOKEN }}"
 
 
